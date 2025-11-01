@@ -50,10 +50,7 @@ If you prefer manual setup:
    chmod +x ~/.claude/hooks/play_audio.sh
    ```
 
-2. Copy your audio file:
-   ```bash
-   cp audio/hey-chan-please-help-me.mp3 ~/
-   ```
+2. Keep the project folder in a permanent location (the hook script will read audio from the project folder)
 
 3. Add hook configuration to `~/.claude/settings.json`:
    ```json
@@ -89,15 +86,12 @@ If you prefer manual setup:
 
 #### Using Your Own Audio File
 
-1. Replace the MP3 file:
-   ```bash
-   cp /path/to/your/audio.mp3 ~/your-audio-file.mp3
-   ```
+Simply replace the audio file in the project folder:
+```bash
+cp /path/to/your/audio.mp3 ~/claude-code-audio-hooks/audio/hey-chan-please-help-me.mp3
+```
 
-2. Update the script at `~/.claude/hooks/play_audio.sh`:
-   ```bash
-   AUDIO_FILE="/home/YOUR_USERNAME/your-audio-file.mp3"
-   ```
+The hook script will automatically use the new audio file. No need to modify any configuration!
 
 #### Adjusting Audio Duration
 
@@ -207,10 +201,7 @@ Created with ❤️ by [Your Name]
    chmod +x ~/.claude/hooks/play_audio.sh
    ```
 
-2. 复制音频文件:
-   ```bash
-   cp audio/hey-chan-please-help-me.mp3 ~/
-   ```
+2. 将项目文件夹保留在永久位置（hook 脚本将从项目文件夹读取音频）
 
 3. 在 `~/.claude/settings.json` 中添加 hook 配置:
    ```json
@@ -246,15 +237,12 @@ Created with ❤️ by [Your Name]
 
 #### 使用您自己的音频文件
 
-1. 替换 MP3 文件:
-   ```bash
-   cp /path/to/your/audio.mp3 ~/your-audio-file.mp3
-   ```
+只需替换项目文件夹中的音频文件:
+```bash
+cp /path/to/your/audio.mp3 ~/claude-code-audio-hooks/audio/hey-chan-please-help-me.mp3
+```
 
-2. 更新脚本 `~/.claude/hooks/play_audio.sh`:
-   ```bash
-   AUDIO_FILE="/home/YOUR_USERNAME/your-audio-file.mp3"
-   ```
+Hook 脚本会自动使用新的音频文件，无需修改任何配置!
 
 #### 调整音频时长
 
