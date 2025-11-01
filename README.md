@@ -204,6 +204,37 @@ claude "What is 2+2?"
 
 **That's it!** The installer handles all 9 hooks, configuration, and permissions automatically.
 
+### **📍 Installation Locations**
+
+**Good news:** You can install this project **anywhere** on your system!
+
+The installation script automatically records your project location, so hooks will work regardless of where you clone the repository:
+
+```bash
+# Any of these locations will work:
+~/claude-code-audio-hooks              # Home directory
+~/projects/claude-code-audio-hooks     # Projects folder
+~/Documents/claude-code-audio-hooks    # Documents
+~/repos/claude-code-audio-hooks        # Custom repos directory
+/any/custom/path/claude-code-audio-hooks  # Any path you prefer
+```
+
+**How it works:**
+1. When you run `bash scripts/install.sh`, it records your project path in `~/.claude/hooks/.project_path`
+2. Hook scripts automatically find audio files and configuration using this recorded path
+3. No manual configuration needed - it just works!
+
+**Verification:**
+```bash
+# Check your recorded project path
+cat ~/.claude/hooks/.project_path
+
+# Verify path detection
+bash scripts/verify-path-detection.sh
+```
+
+**Moving the project?** Just run `bash scripts/install.sh` again after moving, and it will update the path automatically.
+
 ---
 
 ## 🎵 The 9 Notification Types

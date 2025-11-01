@@ -1,17 +1,42 @@
 {
+  "_comment": "Claude Code Audio Hooks - Default Configuration Template",
+  "_version": "2.0.0",
+  "_description": "This file contains the default configuration for Claude Code Audio Hooks. Copy this to user_preferences.json and customize as needed.",
+
   "version": "2.0.0",
+
   "enabled_hooks": {
+    "_comment_notification": "Plays when Claude needs authorization or plan confirmation - HIGHLY RECOMMENDED",
     "notification": true,
+
+    "_comment_stop": "Plays when Claude finishes responding - RECOMMENDED",
     "stop": true,
+
+    "_comment_pretooluse": "Plays before Claude executes a tool (can be noisy) - OPTIONAL",
     "pretooluse": false,
+
+    "_comment_posttooluse": "Plays after each tool execution (very noisy) - OPTIONAL",
     "posttooluse": false,
+
+    "_comment_userpromptsubmit": "Plays when you submit a prompt - OPTIONAL",
     "userpromptsubmit": false,
+
+    "_comment_subagent_stop": "Plays when subagent tasks complete - RECOMMENDED for heavy users",
     "subagent_stop": true,
+
+    "_comment_precompact": "Plays before conversation history compaction - OPTIONAL",
     "precompact": false,
+
+    "_comment_session_start": "Plays when Claude Code session starts - OPTIONAL",
     "session_start": false,
+
+    "_comment_session_end": "Plays when Claude Code session ends - OPTIONAL",
     "session_end": false
   },
+
   "audio_files": {
+    "_comment": "Paths relative to audio/ directory. Use 'default/' for built-in files or 'custom/' for your own.",
+
     "notification": "default/notification-urgent.mp3",
     "stop": "default/task-complete.mp3",
     "pretooluse": "default/task-starting.mp3",
@@ -22,9 +47,26 @@
     "session_start": "default/session-start.mp3",
     "session_end": "default/session-end.mp3"
   },
+
   "playback_settings": {
+    "_comment_queue": "Enable audio queue to prevent overlapping sounds",
     "queue_enabled": true,
+
+    "_comment_max_queue": "Maximum number of audio notifications in queue",
     "max_queue_size": 5,
+
+    "_comment_debounce": "Minimum milliseconds between same notification type (prevents spam)",
     "debounce_ms": 500
-  }
+  },
+
+  "_usage_notes": [
+    "1. RECOMMENDED CONFIGURATION: Enable 'notification', 'stop', and 'subagent_stop'",
+    "2. Enable 'pretooluse' only if you want notifications before EVERY tool execution",
+    "3. 'posttooluse' is very noisy - enable only for debugging",
+    "4. To disable a notification, set its value to false in enabled_hooks",
+    "5. To use custom audio, place MP3 files in audio/custom/ and update paths",
+    "6. Audio files should be 1-3 seconds long for best experience",
+    "7. Run 'scripts/configure.sh' for interactive configuration",
+    "8. Run 'scripts/test-audio.sh' to test all enabled notifications"
+  ]
 }

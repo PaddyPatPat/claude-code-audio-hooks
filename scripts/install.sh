@@ -169,6 +169,11 @@ install_hook_scripts() {
     mkdir -p "$HOOKS_DIR"
     print_success "Hooks directory ready: $HOOKS_DIR"
 
+    # Record project path for hook scripts to find audio and config files
+    echo -e "${CYAN}Recording project path...${NC}"
+    echo "$PROJECT_DIR" > "$HOOKS_DIR/.project_path"
+    print_success "Project path recorded: $PROJECT_DIR"
+
     # Install shared configuration library
     echo -e "${CYAN}Installing shared configuration library...${NC}"
     mkdir -p "$HOOKS_DIR/shared"

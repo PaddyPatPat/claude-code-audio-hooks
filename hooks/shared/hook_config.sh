@@ -10,8 +10,44 @@
 # Determine project directory (works from any hook script location)
 get_project_dir() {
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    # From hooks/shared/ go up two levels
-    echo "$(dirname "$(dirname "$script_dir")")"
+    local hooks_parent="$(dirname "$script_dir")"
+
+    # Strategy 1: Read from .project_path file (created during installation)
+    # This is the most reliable method for installed hooks
+    local project_path_file="$hooks_parent/.project_path"
+    if [ -f "$project_path_file" ]; then
+        local recorded_path=$(cat "$project_path_file" 2>/dev/null | tr -d '\n\r')
+        if [ -d "$recorded_path" ] && [ -f "$recorded_path/config/user_preferences.json" ]; then
+            echo "$recorded_path"
+            return 0
+        fi
+    fi
+
+    # Strategy 2: Check if we're in the project directory structure
+    # (hooks are inside the project, e.g., claude-code-audio-hooks/hooks/shared/)
+    local candidate="$(dirname "$hooks_parent")"
+    if [ -f "$candidate/config/user_preferences.json" ]; then
+        echo "$candidate"
+        return 0
+    fi
+
+    # Strategy 3: Search common installation locations
+    for possible_dir in \
+        "$HOME/claude-code-audio-hooks" \
+        "$HOME/projects/claude-code-audio-hooks" \
+        "$HOME/Documents/claude-code-audio-hooks" \
+        "$HOME/repos/claude-code-audio-hooks" \
+        "$HOME/git/claude-code-audio-hooks" \
+        "$HOME/src/claude-code-audio-hooks"
+    do
+        if [ -d "$possible_dir" ] && [ -f "$possible_dir/config/user_preferences.json" ]; then
+            echo "$possible_dir"
+            return 0
+        fi
+    done
+
+    # Fallback: return the calculated directory even if config doesn't exist
+    echo "$candidate"
 }
 
 PROJECT_DIR="$(get_project_dir)"
