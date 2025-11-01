@@ -309,6 +309,11 @@ get_and_play_audio() {
     local hook_type="$1"
     local default_audio_file="$2"
 
+    # Log directory
+    local log_dir="/tmp/claude_hooks_log"
+    local log_file="$log_dir/hook_triggers.log"
+    mkdir -p "$log_dir" 2>/dev/null
+
     # Check if hook is enabled
     if ! is_hook_enabled "$hook_type"; then
         exit 0  # Hook disabled, exit silently
@@ -331,6 +336,15 @@ get_and_play_audio() {
         else
             exit 0  # No audio file found, exit silently
         fi
+    fi
+
+    # Log the trigger
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "$timestamp | $hook_type | $(basename "$audio_file")" >> "$log_file"
+
+    # Keep only last 200 entries
+    if [ -f "$log_file" ]; then
+        tail -n 200 "$log_file" > "$log_file.tmp" && mv "$log_file.tmp" "$log_file"
     fi
 
     # Play audio with queue management
