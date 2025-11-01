@@ -73,12 +73,15 @@ All 9 audio files are **professional ElevenLabs Jessica voice recordings** - rea
 
 #### **Smart Defaults**
 
-By default, only 3 essential hooks are enabled:
-- ⚠️ **Notification** - Critical alerts (authorization/confirmation)
+By default, 4 essential hooks are enabled to catch ALL pause/stop scenarios:
+- 🔨 **PreToolUse** - Alerts BEFORE tool execution (permission prompts!)
+- ⚠️ **Notification** - System notifications (authorization/confirmation)
 - ✅ **Stop** - Task completion notifications
 - 🤖 **SubagentStop** - Background task alerts
 
-This prevents notification fatigue while keeping you informed of important events!
+**Why PreToolUse is essential:** It alerts you when Claude needs permission to run commands, ensuring you never miss a prompt!
+
+This configuration ensures you're notified whenever Claude Code stops or pauses for ANY reason!
 
 #### **Configuration System**
 
@@ -241,35 +244,36 @@ bash scripts/verify-path-detection.sh
 
 ### **Enabled by Default (Recommended)**
 
-#### **1. ⚠️ Notification Hook** - Critical Alerts
-- **When:** Claude needs authorization or plan confirmation
+#### **1. 🔨 PreToolUse Hook** - Permission Prompt Alert
+- **When:** Before Claude executes any tool (INCLUDING permission prompts!)
+- **Audio:** "Starting task."
+- **Why enable:** **Critical feature!** Alerts you when Claude pauses for permission
+- **Status:** ✅ Enabled by default
+- **Note:** This hook is ESSENTIAL for catching permission prompts like "Do you want to proceed?"
+
+#### **2. ⚠️ Notification Hook** - System Alerts
+- **When:** Claude sends system notifications
 - **Audio:** "Attention! Claude needs your authorization."
-- **Why enable:** Ensures you never miss important permission requests
+- **Why enable:** Ensures you never miss important notifications
 - **Status:** ✅ Enabled by default
 
-#### **2. ✅ Stop Hook** - Task Completion
+#### **3. ✅ Stop Hook** - Task Completion
 - **When:** Claude finishes responding to you
 - **Audio:** "Task completed successfully!"
 - **Why enable:** Core functionality - know when Claude is done
 - **Status:** ✅ Enabled by default
 
-#### **3. 🤖 SubagentStop Hook** - Background Tasks
+#### **4. 🤖 SubagentStop Hook** - Background Tasks
 - **When:** Background/subagent tasks complete
-- **Audio:** "Background task finished!"
+- **Audio:** "Subagent task completed."
 - **Why enable:** Important for long-running operations
 - **Status:** ✅ Enabled by default
 
 ### **Disabled by Default (Use Sparingly)**
 
-#### **4. 🔨 PreToolUse Hook** - Tool Execution Start
-- **When:** Before Claude executes any tool
-- **Audio:** "Executing tool..."
-- **Why disabled:** Very noisy - fires before EVERY tool execution
-- **Status:** ❌ Disabled by default
-
 #### **5. 📊 PostToolUse Hook** - Tool Execution Complete
 - **When:** After Claude executes any tool
-- **Audio:** "Tool execution complete."
+- **Audio:** "Task in progress."
 - **Why disabled:** Extremely noisy - use only for debugging
 - **Status:** ❌ Disabled by default
 

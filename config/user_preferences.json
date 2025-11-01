@@ -12,8 +12,8 @@
     "_comment_stop": "Plays when Claude finishes responding - RECOMMENDED",
     "stop": true,
 
-    "_comment_pretooluse": "Plays before Claude executes a tool (can be noisy) - OPTIONAL",
-    "pretooluse": false,
+    "_comment_pretooluse": "Plays before Claude executes a tool (alerts on permission prompts) - RECOMMENDED",
+    "pretooluse": true,
 
     "_comment_posttooluse": "Plays after each tool execution (very noisy) - OPTIONAL",
     "posttooluse": false,
@@ -60,13 +60,19 @@
   },
 
   "_usage_notes": [
-    "1. RECOMMENDED CONFIGURATION: Enable 'notification', 'stop', and 'subagent_stop'",
-    "2. Enable 'pretooluse' only if you want notifications before EVERY tool execution",
-    "3. 'posttooluse' is very noisy - enable only for debugging",
-    "4. To disable a notification, set its value to false in enabled_hooks",
+    "1. RECOMMENDED CONFIGURATION: Enable 'notification', 'stop', 'pretooluse', and 'subagent_stop'",
+    "2. 'pretooluse' alerts you BEFORE tool execution, including permission prompts (key feature!)",
+    "3. 'posttooluse' is very noisy - keep disabled unless debugging",
+    "4. To reduce notifications, disable 'pretooluse' (you'll only hear task completion)",
     "5. To use custom audio, place MP3 files in audio/custom/ and update paths",
     "6. Audio files should be 1-3 seconds long for best experience",
     "7. Run 'scripts/configure.sh' for interactive configuration",
-    "8. Run 'scripts/test-audio.sh' to test all enabled notifications"
+    "8. Run 'scripts/test-audio.sh' to test all enabled notifications",
+    "",
+    "PROJECT GOAL: Alert user whenever Claude Code stops or pauses for ANY reason:",
+    "  • pretooluse: Alerts BEFORE tools (permission prompts, confirmations)",
+    "  • stop: Alerts AFTER task completion",
+    "  • notification: Alerts on system notifications",
+    "  • subagent_stop: Alerts when background tasks complete"
   ]
 }
