@@ -1,0 +1,359 @@
+#!/bin/bash
+# Claude Code Audio Hooks - Shared Configuration Library
+# This library provides common functions for all hook scripts
+# Version: 2.0.0
+
+# =============================================================================
+# CONFIGURATION PATHS
+# =============================================================================
+
+# Determine project directory (works from any hook script location)
+get_project_dir() {
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # From hooks/shared/ go up two levels
+    echo "$(dirname "$(dirname "$script_dir")")"
+}
+
+PROJECT_DIR="$(get_project_dir)"
+AUDIO_DIR="$PROJECT_DIR/audio"
+CONFIG_FILE="$PROJECT_DIR/config/user_preferences.json"
+LOCK_FILE="/tmp/claude_audio_hooks.lock"
+QUEUE_DIR="/tmp/claude_audio_hooks_queue"
+
+# =============================================================================
+# CONFIGURATION FUNCTIONS
+# =============================================================================
+
+# Check if a hook is enabled in configuration
+is_hook_enabled() {
+    local hook_type="$1"
+
+    # If no config file exists, use defaults (notification, stop, subagent_stop enabled)
+    if [ ! -f "$CONFIG_FILE" ]; then
+        case "$hook_type" in
+            notification|stop|subagent_stop)
+                return 0  # Enabled by default
+                ;;
+            *)
+                return 1  # Disabled by default
+                ;;
+        esac
+    fi
+
+    # Read enabled status from config using Python
+    local enabled=$(python3 <<EOF 2>/dev/null
+import json
+import sys
+try:
+    with open("$CONFIG_FILE", "r") as f:
+        config = json.load(f)
+    enabled = config.get("enabled_hooks", {}).get("$hook_type", False)
+    print("true" if enabled else "false")
+except:
+    print("false")
+EOF
+)
+
+    [ "$enabled" = "true" ]
+}
+
+# Get audio file path for a hook type
+get_audio_file() {
+    local hook_type="$1"
+    local default_file="$2"
+
+    # Try to read from config
+    if [ -f "$CONFIG_FILE" ]; then
+        local audio_path=$(python3 <<EOF 2>/dev/null
+import json
+try:
+    with open("$CONFIG_FILE", "r") as f:
+        config = json.load(f)
+    audio_file = config.get("audio_files", {}).get("$hook_type", "$default_file")
+    print(audio_file)
+except:
+    print("$default_file")
+EOF
+)
+        echo "$AUDIO_DIR/$audio_path"
+    else
+        # Fallback to default
+        echo "$AUDIO_DIR/default/$default_file"
+    fi
+}
+
+# =============================================================================
+# AUDIO PLAYBACK FUNCTIONS
+# =============================================================================
+
+# Play audio file (platform-specific)
+play_audio_internal() {
+    local audio_file="$1"
+
+    # Verify file exists
+    if [ ! -f "$audio_file" ]; then
+        return 1
+    fi
+
+    # Detect platform and play audio
+    # WSL (Windows Subsystem for Linux)
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+        local win_path=$(wslpath -w "$audio_file" 2>/dev/null)
+        if [ -n "$win_path" ]; then
+            powershell.exe -Command "
+                Add-Type -AssemblyName presentationCore
+                \$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
+                \$mediaPlayer.Open('$win_path')
+                \$mediaPlayer.Play()
+                Start-Sleep -Seconds 3
+            " 2>/dev/null &
+            return 0
+        fi
+    fi
+
+    # macOS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v afplay &> /dev/null; then
+            afplay "$audio_file" 2>/dev/null &
+            return 0
+        fi
+    fi
+
+    # Linux (native)
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Try mpg123 first (best for MP3)
+        if command -v mpg123 &> /dev/null; then
+            mpg123 -q "$audio_file" 2>/dev/null &
+            return 0
+        fi
+        # Try aplay (ALSA)
+        if command -v aplay &> /dev/null; then
+            aplay "$audio_file" 2>/dev/null &
+            return 0
+        fi
+        # Try ffplay (from ffmpeg)
+        if command -v ffplay &> /dev/null; then
+            ffplay -nodisp -autoexit -hide_banner -loglevel quiet "$audio_file" 2>/dev/null &
+            return 0
+        fi
+    fi
+
+    # No suitable player found
+    return 1
+}
+
+# =============================================================================
+# AUDIO QUEUE SYSTEM
+# =============================================================================
+
+# Initialize queue directory
+init_queue() {
+    mkdir -p "$QUEUE_DIR" 2>/dev/null
+}
+
+# Check if queue is enabled
+is_queue_enabled() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        return 0  # Queue enabled by default
+    fi
+
+    local queue_enabled=$(python3 <<EOF 2>/dev/null
+import json
+try:
+    with open("$CONFIG_FILE", "r") as f:
+        config = json.load(f)
+    enabled = config.get("playback_settings", {}).get("queue_enabled", True)
+    print("true" if enabled else "false")
+except:
+    print("true")
+EOF
+)
+
+    [ "$queue_enabled" = "true" ]
+}
+
+# Get debounce milliseconds
+get_debounce_ms() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "500"  # Default 500ms
+        return
+    fi
+
+    python3 <<EOF 2>/dev/null
+import json
+try:
+    with open("$CONFIG_FILE", "r") as f:
+        config = json.load(f)
+    debounce = config.get("playback_settings", {}).get("debounce_ms", 500)
+    print(debounce)
+except:
+    print("500")
+EOF
+}
+
+# Play audio with queue management (prevents overlapping sounds)
+play_audio_queued() {
+    local audio_file="$1"
+
+    # Initialize queue directory
+    init_queue
+
+    # Check if queue is enabled
+    if ! is_queue_enabled; then
+        # Queue disabled, play directly
+        play_audio_internal "$audio_file"
+        return $?
+    fi
+
+    # Implement simple lock-based queue
+    local max_wait=10  # Maximum wait time in seconds
+    local waited=0
+
+    while [ -f "$LOCK_FILE" ] && [ $waited -lt $max_wait ]; do
+        sleep 0.1
+        waited=$((waited + 1))
+    done
+
+    # If still locked after max wait, play anyway (avoid hanging)
+    if [ $waited -ge $max_wait ]; then
+        play_audio_internal "$audio_file" &
+        return 0
+    fi
+
+    # Acquire lock
+    touch "$LOCK_FILE"
+
+    # Play audio
+    play_audio_internal "$audio_file"
+    local result=$?
+
+    # Wait for playback to complete (estimated based on typical audio length)
+    sleep 3
+
+    # Release lock
+    rm -f "$LOCK_FILE"
+
+    return $result
+}
+
+# =============================================================================
+# DEBOUNCE SYSTEM
+# =============================================================================
+
+# Check if we should debounce (skip) this notification
+should_debounce() {
+    local hook_type="$1"
+    local debounce_file="$QUEUE_DIR/${hook_type}_last_played"
+    local debounce_ms=$(get_debounce_ms)
+    local debounce_sec=$(echo "scale=3; $debounce_ms / 1000" | bc 2>/dev/null || echo "0.5")
+
+    # If debounce file exists and is recent, skip
+    if [ -f "$debounce_file" ]; then
+        local current_time=$(date +%s.%N)
+        local last_time=$(cat "$debounce_file" 2>/dev/null || echo "0")
+        local time_diff=$(echo "$current_time - $last_time" | bc 2>/dev/null || echo "999")
+
+        if (( $(echo "$time_diff < $debounce_sec" | bc -l 2>/dev/null || echo "0") )); then
+            return 0  # Should debounce (skip)
+        fi
+    fi
+
+    # Update debounce timestamp
+    date +%s.%N > "$debounce_file"
+    return 1  # Should not debounce (play)
+}
+
+# =============================================================================
+# MAIN HOOK EXECUTION FUNCTION
+# =============================================================================
+
+# Main function to get and play audio for a hook type
+# This is the primary entry point called by individual hook scripts
+get_and_play_audio() {
+    local hook_type="$1"
+    local default_audio_file="$2"
+
+    # Check if hook is enabled
+    if ! is_hook_enabled "$hook_type"; then
+        exit 0  # Hook disabled, exit silently
+    fi
+
+    # Check debounce (prevent rapid-fire notifications)
+    if should_debounce "$hook_type"; then
+        exit 0  # Debounced, exit silently
+    fi
+
+    # Get audio file path
+    local audio_file=$(get_audio_file "$hook_type" "$default_audio_file")
+
+    # Verify audio file exists
+    if [ ! -f "$audio_file" ]; then
+        # Try legacy location for backward compatibility
+        local legacy_audio="$AUDIO_DIR/legacy/hey-chan-please-help-me.mp3"
+        if [ -f "$legacy_audio" ]; then
+            audio_file="$legacy_audio"
+        else
+            exit 0  # No audio file found, exit silently
+        fi
+    fi
+
+    # Play audio with queue management
+    play_audio_queued "$audio_file"
+
+    exit 0
+}
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+# Test audio playback (for diagnostic purposes)
+test_audio_playback() {
+    local audio_file="$1"
+
+    echo "Testing audio playback: $audio_file"
+
+    if [ ! -f "$audio_file" ]; then
+        echo "Error: Audio file not found"
+        return 1
+    fi
+
+    echo "File size: $(du -h "$audio_file" | cut -f1)"
+    echo "Playing audio..."
+
+    play_audio_internal "$audio_file"
+    local result=$?
+
+    if [ $result -eq 0 ]; then
+        echo "Audio playback initiated successfully"
+    else
+        echo "Audio playback failed"
+    fi
+
+    return $result
+}
+
+# Cleanup function (remove lock files, queue directory)
+cleanup_hooks() {
+    rm -f "$LOCK_FILE"
+    rm -rf "$QUEUE_DIR"
+    echo "Claude Code Audio Hooks: Cleanup complete"
+}
+
+# =============================================================================
+# EXPORTS
+# =============================================================================
+
+# Export functions for use in hook scripts
+export -f is_hook_enabled
+export -f get_audio_file
+export -f play_audio_internal
+export -f play_audio_queued
+export -f get_and_play_audio
+export -f test_audio_playback
+export -f cleanup_hooks
+
+# Export variables
+export PROJECT_DIR
+export AUDIO_DIR
+export CONFIG_FILE

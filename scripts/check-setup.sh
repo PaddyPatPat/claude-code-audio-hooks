@@ -1,27 +1,34 @@
 #!/bin/bash
-# Claude Code Audio Hooks - Setup Verification Script
-# This script checks if everything is installed correctly
+# Claude Code Audio Hooks - Enhanced Setup Verification Script v2.0
+# Comprehensive validation of all hooks, audio files, and configurations
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
 
 # Counters
 PASSED=0
 FAILED=0
 WARNINGS=0
 
-echo -e "${BLUE}================================================${NC}"
-echo -e "${BLUE}  Claude Code Audio Hooks - Setup Checker${NC}"
-echo -e "${BLUE}================================================${NC}"
-echo ""
-echo "This script will check if everything is set up correctly."
-echo ""
+# Directories
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CLAUDE_DIR="$HOME/.claude"
+HOOKS_DIR="$CLAUDE_DIR/hooks"
+CONFIG_FILE="$PROJECT_DIR/config/user_preferences.json"
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+SETTINGS_LOCAL_FILE="$CLAUDE_DIR/settings.local.json"
 
-# Function to print check results
+echo -e "${BLUE}${BOLD}================================================${NC}"
+echo -e "${BLUE}${BOLD}  Claude Code Audio Hooks - Setup Checker v2.0${NC}"
+echo -e "${BLUE}${BOLD}================================================${NC}\n"
+
+# Functions
 check_pass() {
     echo -e "${GREEN}✓${NC} $1"
     ((PASSED++))
@@ -37,8 +44,11 @@ check_warn() {
     ((WARNINGS++))
 }
 
-# Check 1: Claude Code installed
-echo -e "${BLUE}[1/8]${NC} Checking if Claude Code is installed..."
+#=============================================================================
+# CHECK 1: CLAUDE CODE
+#=============================================================================
+
+echo -e "${BLUE}${BOLD}[1/12]${NC} Checking Claude Code installation...\n"
 if command -v claude &> /dev/null; then
     CLAUDE_VERSION=$(claude --version 2>&1 | head -1)
     check_pass "Claude Code is installed: $CLAUDE_VERSION"

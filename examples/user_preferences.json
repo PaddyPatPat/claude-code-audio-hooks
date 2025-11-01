@@ -1,0 +1,75 @@
+{
+  "_comment": "Example user_preferences.json configuration file",
+  "_location": "This file should be at: claude-code-audio-hooks/config/user_preferences.json",
+
+  "version": "2.0.0",
+
+  "enabled_hooks": {
+    "_comment": "Set to true to enable, false to disable each hook type",
+
+    "notification": true,
+    "_notification_description": "⚠️  RECOMMENDED: Plays when Claude needs authorization or plan confirmation",
+
+    "stop": true,
+    "_stop_description": "✅ RECOMMENDED: Plays when Claude finishes responding",
+
+    "pretooluse": false,
+    "_pretooluse_description": "🔨 OPTIONAL: Plays before Claude executes any tool (can be noisy)",
+
+    "posttooluse": false,
+    "_posttooluse_description": "📊 OPTIONAL: Plays after each tool execution (very noisy - use carefully)",
+
+    "userpromptsubmit": false,
+    "_userpromptsubmit_description": "💬 OPTIONAL: Plays when you submit a prompt",
+
+    "subagent_stop": true,
+    "_subagent_stop_description": "🤖 RECOMMENDED: Plays when background/subagent tasks complete",
+
+    "precompact": false,
+    "_precompact_description": "🗜️  OPTIONAL: Plays before conversation history compaction (rare event)",
+
+    "session_start": false,
+    "_session_start_description": "👋 OPTIONAL: Plays when Claude Code session starts",
+
+    "session_end": false,
+    "_session_end_description": "👋 OPTIONAL: Plays when Claude Code session ends"
+  },
+
+  "audio_files": {
+    "_comment": "Paths relative to audio/ directory",
+    "_options": "Use 'default/' for built-in files or 'custom/' for your own audio files",
+
+    "notification": "default/notification-urgent.mp3",
+    "stop": "default/task-complete.mp3",
+    "pretooluse": "default/task-starting.mp3",
+    "posttooluse": "default/task-progress.mp3",
+    "userpromptsubmit": "default/prompt-received.mp3",
+    "subagent_stop": "default/subagent-complete.mp3",
+    "precompact": "default/notification-info.mp3",
+    "session_start": "default/session-start.mp3",
+    "session_end": "default/session-end.mp3"
+  },
+
+  "playback_settings": {
+    "_comment": "Advanced playback configuration",
+
+    "queue_enabled": true,
+    "_queue_description": "Enable audio queue to prevent overlapping sounds",
+
+    "max_queue_size": 5,
+    "_max_queue_description": "Maximum number of queued audio notifications",
+
+    "debounce_ms": 500,
+    "_debounce_description": "Minimum milliseconds between same notification type (prevents spam)"
+  },
+
+  "_configuration_guide": [
+    "1. RECOMMENDED for most users: Enable 'notification', 'stop', and 'subagent_stop'",
+    "2. Enable 'pretooluse' only if you want notifications before EVERY tool execution",
+    "3. 'posttooluse' is very noisy - enable only for debugging purposes",
+    "4. To use custom audio: Place MP3 files in audio/custom/ and update paths above",
+    "5. Run scripts/configure.sh for interactive configuration",
+    "6. Run scripts/test-audio.sh to test your setup",
+    "7. Remember to restart Claude Code after making changes"
+  ]
+}

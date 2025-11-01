@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "enabled_hooks": {
+    "notification": true,
+    "stop": true,
+    "pretooluse": false,
+    "posttooluse": false,
+    "userpromptsubmit": false,
+    "subagent_stop": true,
+    "precompact": false,
+    "session_start": false,
+    "session_end": false
+  },
+  "audio_files": {
+    "notification": "default/notification-urgent.mp3",
+    "stop": "default/task-complete.mp3",
+    "pretooluse": "default/task-starting.mp3",
+    "posttooluse": "default/task-progress.mp3",
+    "userpromptsubmit": "default/prompt-received.mp3",
+    "subagent_stop": "default/subagent-complete.mp3",
+    "precompact": "default/notification-info.mp3",
+    "session_start": "default/session-start.mp3",
+    "session_end": "default/session-end.mp3"
+  },
+  "playback_settings": {
+    "queue_enabled": true,
+    "max_queue_size": 5,
+    "debounce_ms": 500
+  }
+}

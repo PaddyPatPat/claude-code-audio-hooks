@@ -1,16 +1,108 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Example Claude Code settings.json with all 9 hook events configured",
+
   "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/notification_hook.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/YOUR_USERNAME/.claude/hooks/play_audio.sh"
+            "command": "/home/YOUR_USERNAME/.claude/hooks/stop_hook.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/pretooluse_hook.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/posttooluse_hook.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/userprompt_hook.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/subagent_hook.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/precompact_hook.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/session_start_hook.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/.claude/hooks/session_end_hook.sh"
           }
         ]
       }
     ]
-  }
+  },
+
+  "_usage_note": "This is automatically configured by install.sh. Manual editing not recommended."
 }
