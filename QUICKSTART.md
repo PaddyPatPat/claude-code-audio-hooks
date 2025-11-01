@@ -6,7 +6,28 @@ This is the fastest way to get started. For detailed explanations, see the [full
 
 ---
 
-## Step 1: Open Your Terminal
+## 🤖 EASIEST: Let AI Do It (30 seconds!)
+
+**Using Claude Code, Cursor, or another AI assistant?**
+
+**Just paste this to your AI:**
+
+```
+Please install Claude Code Audio Hooks for me. Clone it from
+https://github.com/ChanMeng666/claude-code-audio-hooks, run the
+installer, and verify everything works. Check AI_SETUP_GUIDE.md
+in the repo for full instructions.
+```
+
+**Done!** The AI will handle everything. ✨
+
+**→ [See AI Installation Guide](AI_SETUP_GUIDE.md)**
+
+---
+
+## 💻 Manual Installation (2 minutes)
+
+### Step 1: Open Your Terminal
 
 ### Windows Users:
 1. Press `Windows + R`

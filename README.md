@@ -7,11 +7,37 @@
 
 ---
 
+## 🤖 NEW: Let AI Install It For You!
+
+**Using Claude Code, Cursor, Copilot, or another AI coding assistant?** Let AI do all the work!
+
+### 🎯 Super Easy Installation (Recommended!)
+
+**Just copy this to your AI assistant:**
+
+```
+Please install Claude Code Audio Hooks for me. Clone the repository from
+https://github.com/ChanMeng666/claude-code-audio-hooks, run the installer,
+and verify the setup. See the AI_SETUP_GUIDE.md in the repo for detailed
+instructions.
+```
+
+**Your AI will automatically:**
+- ✅ Check your system
+- ✅ Install everything
+- ✅ Test the audio
+- ✅ Help you troubleshoot
+
+**→ [Full AI Installation Guide](AI_SETUP_GUIDE.md)** ← Complete instructions for AI tools
+
+---
+
 ## 📖 Table of Contents
 
+- [Let AI Install It For You! 🤖](#-new-let-ai-install-it-for-you) ⭐ **NEW!**
 - [What Does This Do?](#what-does-this-do)
 - [Before You Start](#before-you-start)
-- [Installation Guide](#installation-guide)
+- [Installation Guide](#installation-guide) (Manual Installation)
   - [For Windows (WSL) Users](#for-windows-wsl-users)
   - [For Linux Users](#for-linux-users)
   - [For macOS Users](#for-macos-users)
