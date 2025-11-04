@@ -5,6 +5,129 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-01-04
+
+### 🎯 Cross-Platform Compatibility Release
+
+This release focuses on improving Windows compatibility, especially for Git Bash and PowerShell users, and adds comprehensive diagnostic tools.
+
+### Added
+
+**New Scripts:**
+- `scripts/diagnose-platform.sh` - Comprehensive platform detection and diagnostic tool
+  - Detects environment (Git Bash, WSL, Cygwin, macOS, Linux)
+  - Checks all dependencies and audio capabilities
+  - Provides platform-specific troubleshooting recommendations
+  - Validates installation status and file locations
+
+**New Documentation:**
+- `docs/CROSS_PLATFORM_INSTALLATION.md` - Complete cross-platform installation guide
+  - Detailed instructions for Windows (Git Bash, WSL, Cygwin)
+  - macOS and Linux installation guides
+  - Platform-specific troubleshooting section
+  - Audio playback compatibility matrix
+- `docs/WINDOWS_INSTALLATION_CN.md` - Chinese installation guide for Windows users
+  - 详细的中文安装说明
+  - Windows环境特定的问题解决方案
+  - Git Bash vs WSL vs PowerShell 对比
+
+**Platform Support:**
+- ✅ **Git Bash (MSYS/MINGW)** - Full support with automatic path conversion
+- ✅ **WSL (Windows Subsystem for Linux)** - Full support with wslpath
+- ✅ **Cygwin** - Full support with cygpath
+- ✅ **macOS** - Full support with afplay
+- ✅ **Native Linux** - Full support with multiple audio players
+
+### Changed
+
+**Enhanced Audio Playback (`hooks/shared/hook_config.sh`):**
+- Improved `play_audio_internal()` function with multi-platform detection
+- Added Git Bash/MSYS/MINGW support using PowerShell.exe
+- Added Cygwin support using cygpath for path conversion
+- Enhanced WSL support with proper MediaPlayer cleanup
+- Added paplay (PulseAudio) support for Linux
+- Better error handling for all platforms
+
+**Improved Path Detection:**
+- `.project_path` file system now works correctly across all platforms
+- Three-tier path detection strategy (recorded path, project structure, common locations)
+- Project can be installed in any directory location
+- Automatic path recording during installation
+
+**Enhanced Testing:**
+- Fixed `test-audio.sh` AUDIO_DIR path conflict with hook_config.sh
+- Improved audio file path resolution
+- Better error messages and diagnostics
+
+**Updated Documentation:**
+- Updated README.md with Windows support information
+- Added platform badge (Windows | Linux | macOS)
+- Added link to cross-platform installation guide
+- Added platform diagnostic tool section
+
+### Fixed
+
+**Windows Compatibility:**
+- Fixed path detection failing when project not in `~/claude-code-audio-hooks`
+- Fixed audio playback in Git Bash environment (was only working in WSL)
+- Fixed PowerShell script escaping issues in Git Bash
+- Fixed path conversion for Windows paths (e.g., `/c/Users/...` to `C:/Users/...`)
+- Fixed encoding issues causing garbled error messages in Chinese Windows
+
+**Audio Playback:**
+- Fixed temporary PowerShell script creation in Git Bash
+- Fixed MediaPlayer resource cleanup in WSL
+- Fixed audio file not found errors due to incorrect path resolution
+- Fixed AUDIO_DIR being overwritten by hook_config.sh in test scripts
+
+**Installation:**
+- Fixed install.sh not creating `.project_path` file correctly in all cases
+- Fixed hooks failing when project in custom locations
+- Fixed permission issues with hook scripts
+
+### Improved
+
+**Error Handling:**
+- Better error messages for missing dependencies
+- Platform-specific troubleshooting guidance
+- Automatic detection of common issues
+- Clear diagnostic output
+
+**User Experience:**
+- Platform diagnostic tool provides comprehensive system analysis
+- Improved verification scripts with better output
+- Enhanced documentation with platform-specific examples
+- Chinese documentation for Windows users
+
+### Technical Details
+
+**Platform Detection Logic:**
+```bash
+# WSL: grep -qi microsoft /proc/version
+# Git Bash: $OSTYPE == "msys" || "mingw*"
+# Cygwin: $OSTYPE == "cygwin"
+# macOS: $OSTYPE == "darwin*"
+# Linux: $OSTYPE == "linux-gnu*" && not WSL
+```
+
+**Path Conversion:**
+- WSL: `wslpath -w` for Windows path conversion
+- Git Bash: `sed 's|^/\([a-zA-Z]\)/|\U\1:/|'` for path conversion
+- Cygwin: `cygpath -w` for Windows path conversion
+
+**Audio Playback Methods:**
+- Windows (all): PowerShell.exe with System.Windows.Media.MediaPlayer
+- macOS: afplay (built-in)
+- Linux: mpg123, aplay, ffplay, or paplay
+
+### Notes
+
+- PowerShell native environment has limited support - Git Bash recommended for Windows users
+- Python 3 is optional but recommended for full configuration support
+- Without Python, system uses default configuration (3 essential hooks enabled)
+
+---
+
 ## [2.0.0] - 2025-01-XX
 
 ### 🎉 Major Release: Multi-Hook Support

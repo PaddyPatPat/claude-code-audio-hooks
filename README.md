@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20WSL%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Zero Learning Curve](https://img.shields.io/badge/AI%20Installation-Zero%20Learning%20Curve-purple.svg)](AI_SETUP_GUIDE.md)
 
 ---
@@ -144,9 +144,11 @@ Claude Code Audio Hooks adds **intelligent audio notifications** to Claude Code 
    - Verify: `claude --version`
 
 2. **Operating System:**
-   - ✅ Windows with WSL (Windows Subsystem for Linux)
-   - ✅ Native Linux (Ubuntu, Debian, Fedora, etc.)
-   - ✅ macOS
+   - ✅ **Windows:** Git Bash (recommended), WSL, or Cygwin
+   - ✅ **Linux:** Native Linux (Ubuntu, Debian, Fedora, Arch, etc.)
+   - ✅ **macOS:** All versions with Terminal or iTerm2
+
+   📚 **[→ Cross-Platform Installation Guide](docs/CROSS_PLATFORM_INSTALLATION.md)** for platform-specific instructions
 
 3. **Optional (for manual setup):**
    - Python 3 (for configuration management)
@@ -524,6 +526,27 @@ After editing, restart Claude Code for changes to take effect.
 ---
 
 ## 🧪 Testing & Verification
+
+### **Platform Diagnostic Tool** (New! 🆕)
+
+Automatically detect your environment and check for issues:
+
+```bash
+bash scripts/diagnose-platform.sh
+```
+
+**This tool checks:**
+- ✅ Environment detection (WSL, Git Bash, Linux, macOS, etc.)
+- ✅ All dependencies (bash, git, claude, python3)
+- ✅ Audio playback capabilities for your platform
+- ✅ Installation status and file locations
+- ✅ Project path detection
+- ✅ Permissions and settings
+- ✅ Provides platform-specific recommendations
+
+**Perfect for troubleshooting cross-platform issues!**
+
+---
 
 ### **Comprehensive Setup Check**
 

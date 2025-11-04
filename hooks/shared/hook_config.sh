@@ -132,18 +132,69 @@ play_audio_internal() {
     fi
 
     # Detect platform and play audio
-    # WSL (Windows Subsystem for Linux)
+
+    # Windows environments (WSL, Git Bash, MSYS, MINGW, Cygwin, or PowerShell)
+    # Check for WSL first (has /proc/version with "microsoft")
     if grep -qi microsoft /proc/version 2>/dev/null; then
+        # WSL environment - use wslpath for path conversion
         local win_path=$(wslpath -w "$audio_file" 2>/dev/null)
         if [ -n "$win_path" ]; then
+            # Use PowerShell with proper escaping for WSL
             powershell.exe -Command "
                 Add-Type -AssemblyName presentationCore
                 \$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
                 \$mediaPlayer.Open('$win_path')
                 \$mediaPlayer.Play()
                 Start-Sleep -Seconds 3
+                \$mediaPlayer.Stop()
+                \$mediaPlayer.Close()
             " 2>/dev/null &
             return 0
+        fi
+    # Git Bash / MSYS / MINGW (Windows Git Bash)
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
+        # Convert Unix-style path to Windows path (e.g., /c/Users/... -> C:/Users/...)
+        local win_path=$(echo "$audio_file" | sed 's|^/\([a-zA-Z]\)/|\U\1:/|')
+        if [ -n "$win_path" ]; then
+            # Create temporary PowerShell script to avoid escaping issues
+            local temp_ps1="/tmp/claude_audio_play_$$.ps1"
+            local temp_ps1_win=$(echo "$temp_ps1" | sed 's|^/\([a-zA-Z]\)/|\U\1:/|')
+
+            # Create PowerShell script
+            cat > "$temp_ps1" << 'PSEOF'
+Add-Type -AssemblyName presentationCore
+$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
+$uri = New-Object System.Uri("file:///__AUDIOFILE__")
+$mediaPlayer.Open($uri)
+$mediaPlayer.Play()
+Start-Sleep -Seconds 3
+$mediaPlayer.Stop()
+$mediaPlayer.Close()
+PSEOF
+            # Replace placeholder with actual path
+            sed -i "s|__AUDIOFILE__|$win_path|g" "$temp_ps1" 2>/dev/null
+
+            # Execute PowerShell script and clean up in background
+            (powershell.exe -ExecutionPolicy Bypass -File "$temp_ps1_win" 2>/dev/null; rm -f "$temp_ps1" 2>/dev/null) &
+            return 0
+        fi
+    # Cygwin (another Windows compatibility layer)
+    elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # Cygwin has its own path converter
+        if command -v cygpath &> /dev/null; then
+            local win_path=$(cygpath -w "$audio_file" 2>/dev/null)
+            if [ -n "$win_path" ]; then
+                powershell.exe -Command "
+                    Add-Type -AssemblyName presentationCore
+                    \$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
+                    \$mediaPlayer.Open('$win_path')
+                    \$mediaPlayer.Play()
+                    Start-Sleep -Seconds 3
+                    \$mediaPlayer.Stop()
+                    \$mediaPlayer.Close()
+                " 2>/dev/null &
+                return 0
+            fi
         fi
     fi
 
@@ -155,8 +206,8 @@ play_audio_internal() {
         fi
     fi
 
-    # Linux (native)
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux (native) - not WSL
+    if [[ "$OSTYPE" == "linux-gnu"* ]] && ! grep -qi microsoft /proc/version 2>/dev/null; then
         # Try mpg123 first (best for MP3)
         if command -v mpg123 &> /dev/null; then
             mpg123 -q "$audio_file" 2>/dev/null &
@@ -170,6 +221,11 @@ play_audio_internal() {
         # Try ffplay (from ffmpeg)
         if command -v ffplay &> /dev/null; then
             ffplay -nodisp -autoexit -hide_banner -loglevel quiet "$audio_file" 2>/dev/null &
+            return 0
+        fi
+        # Try paplay (PulseAudio)
+        if command -v paplay &> /dev/null; then
+            paplay "$audio_file" 2>/dev/null &
             return 0
         fi
     fi

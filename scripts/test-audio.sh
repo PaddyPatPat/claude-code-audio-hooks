@@ -13,7 +13,7 @@ NC='\033[0m'
 
 # Directories
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-AUDIO_DIR="$PROJECT_DIR/audio/default"
+TEST_AUDIO_DIR="$PROJECT_DIR/audio/default"  # Test script uses audio/default
 HOOKS_DIR="$HOME/.claude/hooks"
 CONFIG_FILE="$PROJECT_DIR/config/user_preferences.json"
 
@@ -41,6 +41,9 @@ echo -e "${GREEN}✓${NC} Hook system is installed\n"
 
 # Source the shared library for audio playback
 source "$HOOKS_DIR/shared/hook_config.sh"
+
+# Restore TEST_AUDIO_DIR for test script (hook_config.sh sets AUDIO_DIR differently)
+AUDIO_DIR="$TEST_AUDIO_DIR"
 
 #=============================================================================
 # LOAD CONFIGURATION
