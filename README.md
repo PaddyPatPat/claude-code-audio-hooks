@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v2.2.0 Now Available!** Intelligent audio notifications for Claude Code CLI with automatic format compatibility. Get notified for task completion, authorization requests, background tasks, and more!
+> **🎉 v2.3.0 Now Available!** Full macOS compatibility with bash 3.2+! Intelligent audio notifications for Claude Code CLI. Get notified for task completion, authorization requests, background tasks, and more!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -1241,7 +1241,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 2.2.0** - Intelligent audio notifications with automatic format compatibility
+**Current Version: 2.3.0** - Full macOS bash 3.2+ compatibility with intelligent audio notifications
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 
