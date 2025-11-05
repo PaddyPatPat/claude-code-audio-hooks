@@ -1,8 +1,16 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Interactive Configuration Tool
 # Allows users to enable/disable hooks and customize settings
+# Compatible with bash 3.2+ (macOS default)
 
 set -e
+
+# Bash version compatibility notice
+if [ "${BASH_VERSION%%.*}" -eq 3 ]; then
+    # Running on bash 3.x (likely macOS)
+    # Script has been adapted for bash 3.2 compatibility
+    :  # No-op, script will work fine
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -23,49 +31,89 @@ AUDIO_DIR="$PROJECT_DIR/audio"
 source "$PROJECT_DIR/hooks/shared/hook_config.sh" 2>/dev/null || true
 
 #=============================================================================
-# CONFIGURATION STATE
+# CONFIGURATION STATE - Using parallel arrays for bash 3.2 compatibility
 #=============================================================================
 
-declare -A HOOK_ENABLED
-declare -A HOOK_AUDIO_FILES
-declare -A HOOK_DESCRIPTIONS
+# Hook names array (indexed)
+HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
+
+# Parallel arrays for enabled status and descriptions
+HOOK_ENABLED=()
+HOOK_DESCRIPTIONS=()
+
+# Initialize descriptions
+init_descriptions() {
+    HOOK_DESCRIPTIONS[0]="⚠️  Authorization/confirmation requests (CRITICAL)"
+    HOOK_DESCRIPTIONS[1]="✅ Task completion"
+    HOOK_DESCRIPTIONS[2]="🔨 Before tool execution (can be noisy)"
+    HOOK_DESCRIPTIONS[3]="📊 After tool execution (very noisy)"
+    HOOK_DESCRIPTIONS[4]="💬 User prompt submission"
+    HOOK_DESCRIPTIONS[5]="🤖 Subagent task completion"
+    HOOK_DESCRIPTIONS[6]="🗜️  Before conversation compaction"
+    HOOK_DESCRIPTIONS[7]="👋 Session start"
+    HOOK_DESCRIPTIONS[8]="👋 Session end"
+}
+
+# Get index of hook by name
+get_hook_index() {
+    local hook_name=$1
+    for i in "${!HOOK_NAMES[@]}"; do
+        if [[ "${HOOK_NAMES[$i]}" == "$hook_name" ]]; then
+            echo "$i"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Get enabled status by hook name
+is_hook_enabled() {
+    local hook_name=$1
+    local index=$(get_hook_index "$hook_name")
+    if [ -n "$index" ]; then
+        echo "${HOOK_ENABLED[$index]}"
+    else
+        echo "false"
+    fi
+}
+
+# Set enabled status by hook name
+set_hook_enabled() {
+    local hook_name=$1
+    local enabled=$2
+    local index=$(get_hook_index "$hook_name")
+    if [ -n "$index" ]; then
+        HOOK_ENABLED[$index]="$enabled"
+    fi
+}
 
 # Initialize hook data
 init_hooks() {
-    # Hook descriptions
-    HOOK_DESCRIPTIONS["notification"]="⚠️  Authorization/confirmation requests (CRITICAL)"
-    HOOK_DESCRIPTIONS["stop"]="✅ Task completion"
-    HOOK_DESCRIPTIONS["pretooluse"]="🔨 Before tool execution (can be noisy)"
-    HOOK_DESCRIPTIONS["posttooluse"]="📊 After tool execution (very noisy)"
-    HOOK_DESCRIPTIONS["userpromptsubmit"]="💬 User prompt submission"
-    HOOK_DESCRIPTIONS["subagent_stop"]="🤖 Subagent task completion"
-    HOOK_DESCRIPTIONS["precompact"]="🗜️  Before conversation compaction"
-    HOOK_DESCRIPTIONS["session_start"]="👋 Session start"
-    HOOK_DESCRIPTIONS["session_end"]="👋 Session end"
+    # Initialize descriptions
+    init_descriptions
 
     # Load current configuration
     if [ -f "$CONFIG_FILE" ]; then
         load_configuration
     else
         # Use defaults
-        HOOK_ENABLED["notification"]=true
-        HOOK_ENABLED["stop"]=true
-        HOOK_ENABLED["pretooluse"]=false
-        HOOK_ENABLED["posttooluse"]=false
-        HOOK_ENABLED["userpromptsubmit"]=false
-        HOOK_ENABLED["subagent_stop"]=true
-        HOOK_ENABLED["precompact"]=false
-        HOOK_ENABLED["session_start"]=false
-        HOOK_ENABLED["session_end"]=false
+        HOOK_ENABLED[0]="true"   # notification
+        HOOK_ENABLED[1]="true"   # stop
+        HOOK_ENABLED[2]="false"  # pretooluse
+        HOOK_ENABLED[3]="false"  # posttooluse
+        HOOK_ENABLED[4]="false"  # userpromptsubmit
+        HOOK_ENABLED[5]="true"   # subagent_stop
+        HOOK_ENABLED[6]="false"  # precompact
+        HOOK_ENABLED[7]="false"  # session_start
+        HOOK_ENABLED[8]="false"  # session_end
     fi
 }
 
 load_configuration() {
-    local hooks=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
-
-    for hook in "${hooks[@]}"; do
+    for i in "${!HOOK_NAMES[@]}"; do
+        local hook="${HOOK_NAMES[$i]}"
         local enabled=$(python3 -c "import json; config=json.load(open('$CONFIG_FILE')); print(str(config.get('enabled_hooks', {}).get('$hook', False)).lower())")
-        HOOK_ENABLED["$hook"]=$([[ "$enabled" == "true" ]] && echo "true" || echo "false")
+        HOOK_ENABLED[$i]=$([[ "$enabled" == "true" ]] && echo "true" || echo "false")
     done
 }
 
@@ -134,8 +182,8 @@ print_header() {
 }
 
 print_hook_status() {
-    local hook=$1
-    local enabled=${HOOK_ENABLED[$hook]}
+    local index=$1
+    local enabled="${HOOK_ENABLED[$index]}"
 
     if [[ "$enabled" == "true" ]]; then
         echo -e "${GREEN}[✓]${NC}"
@@ -150,12 +198,10 @@ display_main_menu() {
     echo -e "${CYAN}${BOLD}Current Configuration:${NC}\n"
 
     # Display all hooks with status
-    local i=1
-    for hook in notification stop pretooluse posttooluse userpromptsubmit subagent_stop precompact session_start session_end; do
-        local status=$(print_hook_status "$hook")
-        local desc="${HOOK_DESCRIPTIONS[$hook]}"
-        printf "${BOLD}%d.${NC} %s ${desc}\n" $i "$status"
-        ((i++))
+    for i in "${!HOOK_NAMES[@]}"; do
+        local status=$(print_hook_status "$i")
+        local desc="${HOOK_DESCRIPTIONS[$i]}"
+        printf "${BOLD}%d.${NC} %s ${desc}\n" $((i + 1)) "$status"
     done
 
     echo ""
@@ -168,30 +214,25 @@ display_main_menu() {
     echo ""
 }
 
-get_hook_by_number() {
-    case $1 in
-        1) echo "notification" ;;
-        2) echo "stop" ;;
-        3) echo "pretooluse" ;;
-        4) echo "posttooluse" ;;
-        5) echo "userpromptsubmit" ;;
-        6) echo "subagent_stop" ;;
-        7) echo "precompact" ;;
-        8) echo "session_start" ;;
-        9) echo "session_end" ;;
-        *) echo "" ;;
-    esac
+get_hook_index_by_number() {
+    local num=$1
+    if [ "$num" -ge 1 ] && [ "$num" -le 9 ]; then
+        echo $((num - 1))
+    else
+        echo ""
+    fi
 }
 
 toggle_hook() {
-    local hook=$1
+    local index=$1
+    local hook_name="${HOOK_NAMES[$index]}"
 
-    if [[ "${HOOK_ENABLED[$hook]}" == "true" ]]; then
-        HOOK_ENABLED[$hook]="false"
-        echo -e "${YELLOW}Disabled${NC} $hook"
+    if [[ "${HOOK_ENABLED[$index]}" == "true" ]]; then
+        HOOK_ENABLED[$index]="false"
+        echo -e "${YELLOW}Disabled${NC} $hook_name"
     else
-        HOOK_ENABLED[$hook]="true"
-        echo -e "${GREEN}Enabled${NC} $hook"
+        HOOK_ENABLED[$index]="true"
+        echo -e "${GREEN}Enabled${NC} $hook_name"
     fi
 
     sleep 0.5
@@ -210,15 +251,15 @@ reset_to_defaults() {
     echo ""
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        HOOK_ENABLED["notification"]=true
-        HOOK_ENABLED["stop"]=true
-        HOOK_ENABLED["pretooluse"]=false
-        HOOK_ENABLED["posttooluse"]=false
-        HOOK_ENABLED["userpromptsubmit"]=false
-        HOOK_ENABLED["subagent_stop"]=true
-        HOOK_ENABLED["precompact"]=false
-        HOOK_ENABLED["session_start"]=false
-        HOOK_ENABLED["session_end"]=false
+        HOOK_ENABLED[0]="true"   # notification
+        HOOK_ENABLED[1]="true"   # stop
+        HOOK_ENABLED[2]="false"  # pretooluse
+        HOOK_ENABLED[3]="false"  # posttooluse
+        HOOK_ENABLED[4]="false"  # userpromptsubmit
+        HOOK_ENABLED[5]="true"   # subagent_stop
+        HOOK_ENABLED[6]="false"  # precompact
+        HOOK_ENABLED[7]="false"  # session_start
+        HOOK_ENABLED[8]="false"  # session_end
 
         echo -e "${GREEN}✓${NC} Reset to defaults"
         sleep 1
@@ -229,7 +270,6 @@ test_audio_files() {
     print_header
     echo -e "${CYAN}${BOLD}Audio File Testing${NC}\n"
 
-    local hooks=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
     local audio_files=(
         "default/notification-urgent.mp3"
         "default/task-complete.mp3"
@@ -245,11 +285,11 @@ test_audio_files() {
     echo -e "Testing enabled hooks only...\n"
 
     local tested=0
-    for i in "${!hooks[@]}"; do
-        local hook="${hooks[$i]}"
+    for i in "${!HOOK_NAMES[@]}"; do
+        local hook="${HOOK_NAMES[$i]}"
         local audio_file="$AUDIO_DIR/${audio_files[$i]}"
 
-        if [[ "${HOOK_ENABLED[$hook]}" == "true" ]]; then
+        if [[ "${HOOK_ENABLED[$i]}" == "true" ]]; then
             if [ -f "$audio_file" ]; then
                 echo -e "${CYAN}Playing:${NC} $hook (${audio_files[$i]})"
                 play_audio_internal "$audio_file" 2>/dev/null
@@ -288,9 +328,9 @@ main() {
 
         case $option in
             [1-9])
-                local hook=$(get_hook_by_number $option)
-                if [ -n "$hook" ]; then
-                    toggle_hook "$hook"
+                local index=$(get_hook_index_by_number $option)
+                if [ -n "$index" ]; then
+                    toggle_hook "$index"
                 fi
                 ;;
             [Rr])
@@ -304,8 +344,11 @@ main() {
                 echo -e "${CYAN}Saving configuration...${NC}\n"
 
                 # Export hook states as environment variables for Python script
-                for hook in notification stop pretooluse posttooluse userpromptsubmit subagent_stop precompact session_start session_end; do
-                    export HOOK_${hook^^}="${HOOK_ENABLED[$hook]}"
+                for i in "${!HOOK_NAMES[@]}"; do
+                    local hook="${HOOK_NAMES[$i]}"
+                    # Use tr for uppercase conversion (bash 3.2 compatible)
+                    local hook_upper=$(echo "$hook" | tr '[:lower:]' '[:upper:]')
+                    export HOOK_${hook_upper}="${HOOK_ENABLED[$i]}"
                 done
 
                 if save_configuration "$CONFIG_FILE"; then

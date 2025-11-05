@@ -1,6 +1,14 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Enhanced Audio Test Script v2.0
 # Tests all audio files and provides diagnostics
+# Compatible with bash 3.2+ (macOS default)
+
+# Bash version compatibility notice
+if [ "${BASH_VERSION%%.*}" -eq 3 ]; then
+    # Running on bash 3.x (likely macOS)
+    # Script has been adapted for bash 3.2 compatibility
+    :  # No-op, script will work fine
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -46,34 +54,104 @@ source "$HOOKS_DIR/shared/hook_config.sh"
 AUDIO_DIR="$TEST_AUDIO_DIR"
 
 #=============================================================================
+# CONFIGURATION DATA - Using parallel arrays for bash 3.2 compatibility
+#=============================================================================
+
+# Hook names array (indexed)
+HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
+
+# Parallel arrays for configuration data
+ENABLED_STATUS=()  # true/false for each hook
+AUDIO_FILES=(
+    "notification-urgent.mp3"
+    "task-complete.mp3"
+    "task-starting.mp3"
+    "task-progress.mp3"
+    "prompt-received.mp3"
+    "subagent-complete.mp3"
+    "notification-info.mp3"
+    "session-start.mp3"
+    "session-end.mp3"
+)
+AUDIO_DESCRIPTIONS=(
+    "Authorization/Confirmation Requests"
+    "Task Completion"
+    "Before Tool Execution"
+    "After Tool Execution"
+    "User Prompt Submission"
+    "Subagent Task Completion"
+    "Before Conversation Compaction"
+    "Session Start"
+    "Session End"
+)
+
+# Get index of hook by name
+get_hook_index() {
+    local hook_name=$1
+    for i in "${!HOOK_NAMES[@]}"; do
+        if [[ "${HOOK_NAMES[$i]}" == "$hook_name" ]]; then
+            echo "$i"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Get enabled status by hook name
+is_hook_enabled() {
+    local hook_name=$1
+    local index=$(get_hook_index "$hook_name")
+    if [ -n "$index" ]; then
+        echo "${ENABLED_STATUS[$index]}"
+    else
+        echo "false"
+    fi
+}
+
+# Get audio file by hook name
+get_audio_file() {
+    local hook_name=$1
+    local index=$(get_hook_index "$hook_name")
+    if [ -n "$index" ]; then
+        echo "${AUDIO_FILES[$index]}"
+    fi
+}
+
+# Get description by hook name
+get_description() {
+    local hook_name=$1
+    local index=$(get_hook_index "$hook_name")
+    if [ -n "$index" ]; then
+        echo "${AUDIO_DESCRIPTIONS[$index]}"
+    fi
+}
+
+#=============================================================================
 # LOAD CONFIGURATION
 #=============================================================================
 
 echo -e "${CYAN}Loading configuration...${NC}\n"
 
-declare -A ENABLED_HOOKS
-
 if [ -f "$CONFIG_FILE" ]; then
     # Load enabled hooks from config
-    HOOKS=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
-
-    for hook in "${HOOKS[@]}"; do
-        enabled=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE')).get('enabled_hooks', {}).get('$hook', False))" 2>/dev/null)
-        ENABLED_HOOKS[$hook]=$([[ "$enabled" == "True" ]] && echo "true" || echo "false")
+    for i in "${!HOOK_NAMES[@]}"; do
+        local hook="${HOOK_NAMES[$i]}"
+        local enabled=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE')).get('enabled_hooks', {}).get('$hook', False))" 2>/dev/null)
+        ENABLED_STATUS[$i]=$([[ "$enabled" == "True" ]] && echo "true" || echo "false")
     done
 
     echo -e "${GREEN}✓${NC} Configuration loaded from user_preferences.json\n"
 else
     # Use defaults
-    ENABLED_HOOKS["notification"]="true"
-    ENABLED_HOOKS["stop"]="true"
-    ENABLED_HOOKS["pretooluse"]="false"
-    ENABLED_HOOKS["posttooluse"]="false"
-    ENABLED_HOOKS["userpromptsubmit"]="false"
-    ENABLED_HOOKS["subagent_stop"]="true"
-    ENABLED_HOOKS["precompact"]="false"
-    ENABLED_HOOKS["session_start"]="false"
-    ENABLED_HOOKS["session_end"]="false"
+    ENABLED_STATUS[0]="true"   # notification
+    ENABLED_STATUS[1]="true"   # stop
+    ENABLED_STATUS[2]="false"  # pretooluse
+    ENABLED_STATUS[3]="false"  # posttooluse
+    ENABLED_STATUS[4]="false"  # userpromptsubmit
+    ENABLED_STATUS[5]="true"   # subagent_stop
+    ENABLED_STATUS[6]="false"  # precompact
+    ENABLED_STATUS[7]="false"  # session_start
+    ENABLED_STATUS[8]="false"  # session_end
 
     echo -e "${YELLOW}⚠${NC} No config found, using defaults\n"
 fi
@@ -94,40 +172,13 @@ echo ""
 echo ""
 
 #=============================================================================
-# AUDIO FILE DATA
-#=============================================================================
-
-declare -A AUDIO_FILES
-declare -A AUDIO_DESCRIPTIONS
-
-AUDIO_FILES["notification"]="notification-urgent.mp3"
-AUDIO_FILES["stop"]="task-complete.mp3"
-AUDIO_FILES["pretooluse"]="task-starting.mp3"
-AUDIO_FILES["posttooluse"]="task-progress.mp3"
-AUDIO_FILES["userpromptsubmit"]="prompt-received.mp3"
-AUDIO_FILES["subagent_stop"]="subagent-complete.mp3"
-AUDIO_FILES["precompact"]="notification-info.mp3"
-AUDIO_FILES["session_start"]="session-start.mp3"
-AUDIO_FILES["session_end"]="session-end.mp3"
-
-AUDIO_DESCRIPTIONS["notification"]="Authorization/Confirmation Requests"
-AUDIO_DESCRIPTIONS["stop"]="Task Completion"
-AUDIO_DESCRIPTIONS["pretooluse"]="Before Tool Execution"
-AUDIO_DESCRIPTIONS["posttooluse"]="After Tool Execution"
-AUDIO_DESCRIPTIONS["userpromptsubmit"]="User Prompt Submission"
-AUDIO_DESCRIPTIONS["subagent_stop"]="Subagent Task Completion"
-AUDIO_DESCRIPTIONS["precompact"]="Before Conversation Compaction"
-AUDIO_DESCRIPTIONS["session_start"]="Session Start"
-AUDIO_DESCRIPTIONS["session_end"]="Session End"
-
-#=============================================================================
 # TEST FUNCTIONS
 #=============================================================================
 
 test_audio_file() {
     local hook=$1
-    local audio_file="${AUDIO_FILES[$hook]}"
-    local description="${AUDIO_DESCRIPTIONS[$hook]}"
+    local audio_file=$(get_audio_file "$hook")
+    local description=$(get_description "$hook")
     local full_path="$AUDIO_DIR/$audio_file"
 
     echo -e "${CYAN}Testing:${NC} ${BOLD}$description${NC}"
@@ -161,9 +212,10 @@ case $TEST_OPTION in
         echo -e "${BLUE}${BOLD}Testing Enabled Hooks${NC}\n"
         echo -e "This will test only the hooks you have enabled.\n"
 
-        local tested=0
-        for hook in notification stop pretooluse posttooluse userpromptsubmit subagent_stop precompact session_start session_end; do
-            if [[ "${ENABLED_HOOKS[$hook]}" == "true" ]]; then
+        tested=0
+        for i in "${!HOOK_NAMES[@]}"; do
+            hook="${HOOK_NAMES[$i]}"
+            if [[ "${ENABLED_STATUS[$i]}" == "true" ]]; then
                 test_audio_file "$hook"
                 ((tested++))
 
@@ -187,8 +239,8 @@ case $TEST_OPTION in
         echo -e "${BLUE}${BOLD}Testing All Audio Files${NC}\n"
         echo -e "This will play all 9 audio files, including disabled hooks.\n"
 
-        local count=0
-        for hook in notification stop pretooluse posttooluse userpromptsubmit subagent_stop precompact session_start session_end; do
+        count=0
+        for hook in "${HOOK_NAMES[@]}"; do
             test_audio_file "$hook"
             ((count++))
 

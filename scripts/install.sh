@@ -1,8 +1,37 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Enhanced Installation Script v2.0
 # Supports multi-hook installation and automatic upgrade from v1.0
+# Compatible with bash 3.2+ (macOS default)
 
 set -e
+
+# Bash version check
+check_bash_version() {
+    local bash_version="${BASH_VERSION%%[^0-9.]*}"
+    local major_version="${bash_version%%.*}"
+    local minor_version="${bash_version#*.}"
+    minor_version="${minor_version%%.*}"
+
+    if [ "$major_version" -lt 3 ] || ([ "$major_version" -eq 3 ] && [ "$minor_version" -lt 2 ]); then
+        echo "Warning: Your bash version is $bash_version"
+        echo "This script requires bash 3.2 or newer."
+        echo ""
+        echo "macOS users: The default bash should work fine."
+        echo "Other users: Please upgrade bash or install via Homebrew."
+        return 1
+    fi
+
+    if [ "$major_version" -eq 3 ]; then
+        echo "Note: Running on bash $bash_version (macOS compatible mode)"
+        echo "All features have been adapted for bash 3.2 compatibility."
+        echo ""
+    fi
+
+    return 0
+}
+
+# Run version check
+check_bash_version || exit 1
 
 # Colors for output
 RED='\033[0;31m'

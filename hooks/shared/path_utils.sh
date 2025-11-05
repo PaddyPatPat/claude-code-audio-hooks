@@ -102,10 +102,12 @@ to_windows_path() {
                     rest="${input_path:3}"  # Remove /X/
                 fi
 
+                # Convert drive letter to uppercase (bash 3.2 compatible)
+                local drive_upper=$(echo "$drive" | tr '[:lower:]' '[:upper:]')
                 if [ "$format" = "backslash" ]; then
-                    echo "${drive^^}:\\${rest//\//\\}"
+                    echo "${drive_upper}:\\${rest//\//\\}"
                 else
-                    echo "${drive^^}:/${rest}"
+                    echo "${drive_upper}:/${rest}"
                 fi
                 return 0
             fi
@@ -117,10 +119,12 @@ to_windows_path() {
                 local drive="${BASH_REMATCH[1]}"
                 local rest="${input_path:3}"
 
+                # Convert drive letter to uppercase (bash 3.2 compatible)
+                local drive_upper=$(echo "$drive" | tr '[:lower:]' '[:upper:]')
                 if [ "$format" = "backslash" ]; then
-                    converted_path="${drive^^}:\\${rest//\//\\}"
+                    converted_path="${drive_upper}:\\${rest//\//\\}"
                 else
-                    converted_path="${drive^^}:/${rest}"
+                    converted_path="${drive_upper}:/${rest}"
                 fi
 
                 echo "$converted_path"
@@ -156,10 +160,12 @@ to_windows_path() {
         local drive="${BASH_REMATCH[1]}"
         local rest="${input_path:3}"
 
+        # Convert drive letter to uppercase (bash 3.2 compatible)
+        local drive_upper=$(echo "$drive" | tr '[:lower:]' '[:upper:]')
         if [ "$format" = "backslash" ]; then
-            echo "${drive^^}:\\${rest//\//\\}"
+            echo "${drive_upper}:\\${rest//\//\\}"
         else
-            echo "${drive^^}:/${rest}"
+            echo "${drive_upper}:/${rest}"
         fi
         return 0
     fi
@@ -205,7 +211,9 @@ to_unix_path() {
                 local drive="${BASH_REMATCH[1]}"
                 local rest="${BASH_REMATCH[2]}"
                 rest="${rest//\\//}"
-                echo "/mnt/${drive,,}/${rest}"
+                # Convert drive letter to lowercase (bash 3.2 compatible)
+                local drive_lower=$(echo "$drive" | tr '[:upper:]' '[:lower:]')
+                echo "/mnt/${drive_lower}/${rest}"
                 return 0
             fi
             ;;
@@ -217,7 +225,9 @@ to_unix_path() {
                 local rest="${BASH_REMATCH[2]}"
                 # Replace backslashes with forward slashes
                 rest="${rest//\\//}"
-                converted_path="/${drive,,}/${rest}"
+                # Convert drive letter to lowercase (bash 3.2 compatible)
+                local drive_lower=$(echo "$drive" | tr '[:upper:]' '[:lower:]')
+                converted_path="/${drive_lower}/${rest}"
                 echo "$converted_path"
                 return 0
             fi
@@ -246,7 +256,9 @@ to_unix_path() {
         local drive="${BASH_REMATCH[1]}"
         local rest="${BASH_REMATCH[2]}"
         rest="${rest//\\//}"
-        echo "/${drive,,}/${rest}"
+        # Convert drive letter to lowercase (bash 3.2 compatible)
+        local drive_lower=$(echo "$drive" | tr '[:upper:]' '[:lower:]')
+        echo "/${drive_lower}/${rest}"
         return 0
     fi
 
