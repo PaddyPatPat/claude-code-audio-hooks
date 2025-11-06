@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v3.3.2 Now Available!** Fixed critical WSL audio playback issue! Full automation support for all scripts!
+> **🎉 v3.3.3 Now Available!** Fixed critical WSL audio playback & hooks format issues! Full automation support for all scripts!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.3.2-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-3.3.3-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -1405,7 +1405,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 3.3.2** - WSL audio fix + Full automation support + Streamlined installation
+**Current Version: 3.3.3** - WSL audio fix + Hooks format fix + Full automation support
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

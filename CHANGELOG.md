@@ -5,41 +5,62 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.3.2] - 2025-11-07
+## [3.3.3] - 2025-11-07
 
-### 🐛 Bug Fix: WSL Audio Playback Issue
+### 🐛 Critical Bug Fixes: WSL Audio & Hooks Format
 
-Fixed critical audio playback issue for WSL (Windows Subsystem for Linux) users.
+This release fixes two critical issues affecting WSL users and new installations.
 
 ### Fixed
-- **WSL Audio Playback**: Resolved issue where Windows MediaPlayer could not access audio files via WSL UNC paths (`\\wsl.localhost\...`)
-  - Audio files are now copied to Windows temp directory (`C:/Windows/Temp`) before playback
+
+#### 1. WSL Audio Playback Issue
+- **Problem**: Windows MediaPlayer could not access audio files via WSL UNC paths (`\\wsl.localhost\...`)
+- **Solution**: Audio files are now copied to Windows temp directory (`C:/Windows/Temp`) before playback
+- **Impact**: WSL users can now hear audio notifications correctly
+- **Technical Details**:
+  - Modified `play_audio_internal()` in `hooks/shared/hook_config.sh`
   - Automatic cleanup after playback completes
-  - Increased playback wait time from 3s to 4s for better reliability
+  - Increased playback wait time from 3s to 4s for reliability
   - Background process handles file cleanup to avoid blocking
 
-### Technical Details
-**Problem**: Windows MediaPlayer cannot load MP3 files from WSL's UNC network paths (`\\wsl.localhost\Ubuntu\...`).
-
-**Solution**:
-- Modified `play_audio_internal()` function in `hooks/shared/hook_config.sh`
-- Copy audio file to Windows temp directory before playing
-- Play from Windows-native path that MediaPlayer can access
-- Clean up temp file after playback in background process
+#### 2. Hooks Format Compatibility (Credits: @PaddyPatPat)
+- **Problem**: Installer generated deprecated hooks format, causing Claude Code v2.0.32+ to report "Invalid Settings"
+- **Solution**: Updated installer to generate new array-based format required by Claude Code v2.0.32+
+- **Impact**: New installations now work correctly with latest Claude Code
+- **Technical Details**:
+  - Modified `scripts/install-complete.sh` Python script
+  - Old format: `"Notification": "~/.claude/hooks/notification_hook.sh"`
+  - New format: `"Notification": [{"hooks": [{"type": "command", "command": "~/.claude/hooks/notification_hook.sh"}]}]`
+  - Each hook now formatted as array of matcher objects
 
 ### Cross-Platform Status
-- ✅ **WSL users**: Audio now works correctly
+- ✅ **WSL users**: Both audio playback and hooks format fixed
 - ✅ **macOS users**: No changes (continues using afplay)
 - ✅ **Linux users**: No changes (continues using mpg123/aplay)
 - ✅ **Git Bash users**: No changes (already working)
 
 ### Upgrade Instructions
-For existing installations, update the hook configuration:
+
+**For existing installations:**
 ```bash
 cd claude-code-audio-hooks
 git pull origin master
+
+# Update hook audio playback
 cp hooks/shared/hook_config.sh ~/.claude/hooks/shared/hook_config.sh
+
+# Re-run installer to update hooks format
+bash scripts/install-complete.sh
 ```
+
+### Credits
+- WSL audio fix: Main development team
+- Hooks format fix: Special thanks to [@PaddyPatPat](https://github.com/PaddyPatPat) for identifying and documenting the hooks format issue in [PR #2](https://github.com/ChanMeng666/claude-code-audio-hooks/pull/2)
+
+## [3.3.2] - 2025-11-07
+
+### Note
+This version was superseded by v3.3.3 which includes additional hooks format fix. Please upgrade to v3.3.3.
 
 ## [3.3.1] - 2025-11-06
 
