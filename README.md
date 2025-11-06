@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v3.1.1 Now Available!** Ultra-minimal project structure! Zero redundant scripts - only essential files remain. True single-command installation!
+> **🎉 v3.2.0 Now Available!** Dual-mode configuration tool - now usable by both humans AND Claude Code! Programmatic CLI interface added!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -170,7 +170,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 3.1.1 from
+Please install Claude Code Audio Hooks version 3.2.0 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -413,16 +413,20 @@ sequenceDiagram
 
 ## ⚙️ Configuration
 
-### **Interactive Configuration Tool**
+### **🚀 Dual-Mode Configuration Tool**
 
-The easiest way to customize hooks:
+The `configure.sh` script supports **both interactive and programmatic modes** - perfect for humans AND Claude Code!
+
+#### **Interactive Mode** (Menu-Driven Interface)
+
+Launch the interactive menu:
 
 ```bash
 cd ~/claude-code-audio-hooks
 bash scripts/configure.sh
 ```
 
-**Features:**
+**Interactive Features:**
 - Toggle individual hooks on/off
 - Test audio for each hook
 - View current configuration
@@ -453,6 +457,67 @@ Options:
   [S]   Save and exit
   [Q]   Quit without saving
 ```
+
+---
+
+#### **Programmatic Mode** (CLI Interface for Scripts & Claude Code)
+
+Perfect for automation, Claude Code, and other AI assistants!
+
+**List all hooks:**
+```bash
+bash scripts/configure.sh --list
+```
+
+**Get status of a specific hook:**
+```bash
+bash scripts/configure.sh --get notification  # Returns: true or false
+```
+
+**Enable one or more hooks:**
+```bash
+bash scripts/configure.sh --enable notification stop subagent_stop
+```
+
+**Disable hooks:**
+```bash
+bash scripts/configure.sh --disable pretooluse posttooluse
+```
+
+**Set specific values:**
+```bash
+bash scripts/configure.sh --set notification=true --set pretooluse=false
+```
+
+**Reset to recommended defaults:**
+```bash
+bash scripts/configure.sh --reset
+```
+
+**Mixed operations:**
+```bash
+bash scripts/configure.sh --enable notification --disable pretooluse session_start
+```
+
+**Show help:**
+```bash
+bash scripts/configure.sh --help
+```
+
+**Available hooks:**
+- `notification` - Authorization/confirmation requests (CRITICAL)
+- `stop` - Task completion
+- `pretooluse` - Before tool execution (can be noisy)
+- `posttooluse` - After tool execution (very noisy)
+- `userpromptsubmit` - User prompt submission
+- `subagent_stop` - Subagent task completion
+- `precompact` - Before conversation compaction
+- `session_start` - Session start
+- `session_end` - Session end
+
+**Note:** All programmatic commands automatically save changes. Remember to restart Claude Code to apply them!
+
+---
 
 ### **Manual Configuration**
 
@@ -1224,7 +1289,7 @@ claude-code-audio-hooks/
 │   └── example_preferences_mixed.json   # Mixed audio config example
 ├── scripts/
 │   ├── install-complete.sh         # Complete automated installer (v3.1+)
-│   ├── configure.sh                # Interactive configuration tool
+│   ├── configure.sh                # Dual-mode configuration (interactive + CLI)
 │   ├── uninstall.sh                # Complete removal
 │   └── test-audio.sh               # Audio testing tool
 ├── README.md                       # This file

@@ -5,6 +5,58 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2025-11-06
+
+### 🤖 Major Enhancement: Dual-Mode Configuration Tool
+
+`configure.sh` now supports **both human-friendly interactive mode AND programmatic CLI interface** - making it usable by Claude Code, scripts, and automation tools!
+
+### Added
+- **Programmatic CLI Interface** for `configure.sh`:
+  - `--list` - List all hooks and their status
+  - `--get <hook>` - Get status of specific hook (returns `true`/`false`)
+  - `--enable <hook> [hook2...]` - Enable one or more hooks
+  - `--disable <hook> [hook2...]` - Disable one or more hooks
+  - `--set <hook>=<value>` - Set hook to specific value
+  - `--reset` - Reset to recommended defaults
+  - `--help` - Show comprehensive usage guide
+- **Batch Operations** - Enable/disable multiple hooks in one command
+- **Idempotent Operations** - Safe to run multiple times, only changes what's needed
+- **Clear Output** - Visual indicators (✓/✗) for all operations
+
+### Changed
+- **configure.sh** is now a **dual-mode tool**:
+  - No arguments → Interactive menu (existing functionality preserved)
+  - With arguments → Programmatic CLI (new functionality)
+- All programmatic commands automatically save changes
+- Error handling for unknown hooks (warnings, not failures)
+
+### Enhanced
+- **AI Assistant Integration** - Claude Code and other AI tools can now:
+  - Query hook configuration programmatically
+  - Enable/disable hooks based on user preferences
+  - Automate configuration setup
+- **Script Automation** - Easy to integrate into deployment scripts
+- **Backward Compatible** - Interactive mode works exactly as before
+
+### Impact
+- ✅ **Claude Code can now configure hooks!**
+- ✅ **Scriptable configuration** - No more manual editing needed
+- ✅ **Batch operations** - Change multiple hooks at once
+- ✅ **100% backward compatible** - Existing users unaffected
+
+### Examples
+```bash
+# Check if notification hook is enabled
+bash scripts/configure.sh --get notification
+
+# Enable multiple hooks at once
+bash scripts/configure.sh --enable notification stop subagent_stop
+
+# Mixed operations in one command
+bash scripts/configure.sh --enable notification --disable pretooluse
+```
+
 ## [3.1.1] - 2025-11-06
 
 ### 🧹 Deep Cleanup: Removing All Redundant Scripts

@@ -1,6 +1,7 @@
 #!/bin/bash
-# Claude Code Audio Hooks - Interactive Configuration Tool
-# Allows users to enable/disable hooks and customize settings
+# Claude Code Audio Hooks - Dual-Mode Configuration Tool
+# Interactive Mode (no args): Menu-driven interface for humans
+# Programmatic Mode (with args): CLI interface for Claude Code and scripts
 # Compatible with bash 3.2+ (macOS default)
 
 set -e
@@ -380,12 +381,358 @@ main() {
     done
 }
 
-# Check if configuration file directory exists
+#=============================================================================
+# PROGRAMMATIC MODE - CLI Interface for Scripts and Claude Code
+#=============================================================================
+
+print_usage() {
+    cat << EOF
+${BOLD}Claude Code Audio Hooks - Configuration Tool${NC}
+
+${CYAN}INTERACTIVE MODE${NC} (no arguments):
+  ${BOLD}$0${NC}
+    Launch interactive menu for configuration
+
+${CYAN}PROGRAMMATIC MODE${NC} (with arguments):
+  ${BOLD}--help, -h${NC}
+    Show this help message
+
+  ${BOLD}--list, -l${NC}
+    List all hooks and their current status
+
+  ${BOLD}--get <hook>${NC}
+    Get status of a specific hook (returns 'true' or 'false')
+    Example: $0 --get notification
+
+  ${BOLD}--enable <hook> [hook2 ...]${NC}
+    Enable one or more hooks
+    Example: $0 --enable notification stop subagent_stop
+
+  ${BOLD}--disable <hook> [hook2 ...]${NC}
+    Disable one or more hooks
+    Example: $0 --disable pretooluse posttooluse
+
+  ${BOLD}--set <hook>=<value>${NC}
+    Set hook to specific value (true/false)
+    Example: $0 --set notification=true --set pretooluse=false
+
+  ${BOLD}--reset${NC}
+    Reset to recommended defaults
+    (Enables: notification, stop, subagent_stop; Disables: all others)
+
+  ${BOLD}--apply${NC}
+    Save configuration without prompting
+    (Auto-applied after --enable, --disable, --set, --reset)
+
+${CYAN}AVAILABLE HOOKS${NC}:
+  notification, stop, pretooluse, posttooluse, userpromptsubmit,
+  subagent_stop, precompact, session_start, session_end
+
+${CYAN}EXAMPLES${NC}:
+  # Enable multiple hooks at once
+  $0 --enable notification stop subagent_stop
+
+  # Disable noisy hooks
+  $0 --disable pretooluse posttooluse
+
+  # Mixed operations
+  $0 --enable notification --disable pretooluse --set stop=true
+
+  # Check if notification hook is enabled
+  $0 --get notification
+
+  # List all current settings
+  $0 --list
+
+${YELLOW}Note:${NC} Changes are automatically saved in programmatic mode.
+      Remember to restart Claude Code to apply changes.
+EOF
+}
+
+# List all hooks (programmatic mode)
+cmd_list() {
+    init_hooks
+    echo -e "${CYAN}${BOLD}Hook Configuration:${NC}\n"
+    for i in "${!HOOK_NAMES[@]}"; do
+        local hook="${HOOK_NAMES[$i]}"
+        local enabled="${HOOK_ENABLED[$i]}"
+        local desc="${HOOK_DESCRIPTIONS[$i]}"
+        if [[ "$enabled" == "true" ]]; then
+            printf "  ${GREEN}✓${NC} %-20s ${BOLD}enabled${NC}  %s\n" "$hook" "$desc"
+        else
+            printf "  ${RED}✗${NC} %-20s ${BOLD}disabled${NC} %s\n" "$hook" "$desc"
+        fi
+    done
+    echo ""
+}
+
+# Get status of specific hook (programmatic mode)
+cmd_get() {
+    local hook_name=$1
+    if [ -z "$hook_name" ]; then
+        echo -e "${RED}Error: Hook name required${NC}" >&2
+        echo "Usage: $0 --get <hook>" >&2
+        exit 1
+    fi
+
+    init_hooks
+    local index=$(get_hook_index "$hook_name")
+    if [ -z "$index" ]; then
+        echo -e "${RED}Error: Unknown hook '$hook_name'${NC}" >&2
+        exit 1
+    fi
+
+    echo "${HOOK_ENABLED[$index]}"
+}
+
+# Enable hooks (programmatic mode)
+cmd_enable() {
+    local hooks=("$@")
+    if [ ${#hooks[@]} -eq 0 ]; then
+        echo -e "${RED}Error: At least one hook name required${NC}" >&2
+        echo "Usage: $0 --enable <hook> [hook2 ...]" >&2
+        exit 1
+    fi
+
+    init_hooks
+    local changed=0
+
+    for hook_name in "${hooks[@]}"; do
+        local index=$(get_hook_index "$hook_name")
+        if [ -z "$index" ]; then
+            echo -e "${YELLOW}Warning: Unknown hook '$hook_name', skipping${NC}" >&2
+            continue
+        fi
+
+        if [[ "${HOOK_ENABLED[$index]}" != "true" ]]; then
+            HOOK_ENABLED[$index]="true"
+            echo -e "${GREEN}✓${NC} Enabled $hook_name"
+            ((changed++))
+        else
+            echo -e "${CYAN}→${NC} $hook_name already enabled"
+        fi
+    done
+
+    if [ $changed -gt 0 ]; then
+        cmd_save
+    fi
+}
+
+# Disable hooks (programmatic mode)
+cmd_disable() {
+    local hooks=("$@")
+    if [ ${#hooks[@]} -eq 0 ]; then
+        echo -e "${RED}Error: At least one hook name required${NC}" >&2
+        echo "Usage: $0 --disable <hook> [hook2 ...]" >&2
+        exit 1
+    fi
+
+    init_hooks
+    local changed=0
+
+    for hook_name in "${hooks[@]}"; do
+        local index=$(get_hook_index "$hook_name")
+        if [ -z "$index" ]; then
+            echo -e "${YELLOW}Warning: Unknown hook '$hook_name', skipping${NC}" >&2
+            continue
+        fi
+
+        if [[ "${HOOK_ENABLED[$index]}" != "false" ]]; then
+            HOOK_ENABLED[$index]="false"
+            echo -e "${RED}✗${NC} Disabled $hook_name"
+            ((changed++))
+        else
+            echo -e "${CYAN}→${NC} $hook_name already disabled"
+        fi
+    done
+
+    if [ $changed -gt 0 ]; then
+        cmd_save
+    fi
+}
+
+# Set hook value (programmatic mode)
+cmd_set() {
+    local assignments=("$@")
+    if [ ${#assignments[@]} -eq 0 ]; then
+        echo -e "${RED}Error: At least one assignment required${NC}" >&2
+        echo "Usage: $0 --set <hook>=<value>" >&2
+        exit 1
+    fi
+
+    init_hooks
+    local changed=0
+
+    for assignment in "${assignments[@]}"; do
+        if [[ ! "$assignment" =~ ^([a-z_]+)=(true|false)$ ]]; then
+            echo -e "${YELLOW}Warning: Invalid format '$assignment', use hook=true or hook=false${NC}" >&2
+            continue
+        fi
+
+        local hook_name="${BASH_REMATCH[1]}"
+        local value="${BASH_REMATCH[2]}"
+
+        local index=$(get_hook_index "$hook_name")
+        if [ -z "$index" ]; then
+            echo -e "${YELLOW}Warning: Unknown hook '$hook_name', skipping${NC}" >&2
+            continue
+        fi
+
+        if [[ "${HOOK_ENABLED[$index]}" != "$value" ]]; then
+            HOOK_ENABLED[$index]="$value"
+            if [[ "$value" == "true" ]]; then
+                echo -e "${GREEN}✓${NC} Set $hook_name = true"
+            else
+                echo -e "${RED}✗${NC} Set $hook_name = false"
+            fi
+            ((changed++))
+        else
+            echo -e "${CYAN}→${NC} $hook_name already set to $value"
+        fi
+    done
+
+    if [ $changed -gt 0 ]; then
+        cmd_save
+    fi
+}
+
+# Reset to defaults (programmatic mode)
+cmd_reset() {
+    init_hooks
+
+    HOOK_ENABLED[0]="true"   # notification
+    HOOK_ENABLED[1]="true"   # stop
+    HOOK_ENABLED[2]="false"  # pretooluse
+    HOOK_ENABLED[3]="false"  # posttooluse
+    HOOK_ENABLED[4]="false"  # userpromptsubmit
+    HOOK_ENABLED[5]="true"   # subagent_stop
+    HOOK_ENABLED[6]="false"  # precompact
+    HOOK_ENABLED[7]="false"  # session_start
+    HOOK_ENABLED[8]="false"  # session_end
+
+    echo -e "${GREEN}✓${NC} Reset to recommended defaults:"
+    echo -e "  ${GREEN}✓${NC} Enabled: notification, stop, subagent_stop"
+    echo -e "  ${RED}✗${NC} Disabled: all others"
+
+    cmd_save
+}
+
+# Save configuration (programmatic mode)
+cmd_save() {
+    # Export hook states to environment variables (required by save_configuration)
+    for i in "${!HOOK_NAMES[@]}"; do
+        local hook="${HOOK_NAMES[$i]}"
+        # Use tr for uppercase conversion (bash 3.2 compatible)
+        local hook_upper=$(echo "$hook" | tr '[:lower:]' '[:upper:]')
+        export HOOK_${hook_upper}="${HOOK_ENABLED[$i]}"
+    done
+
+    if save_configuration "$CONFIG_FILE"; then
+        echo -e "\n${GREEN}${BOLD}✓ Configuration saved successfully${NC}"
+        echo -e "${YELLOW}Remember to restart Claude Code to apply changes${NC}"
+    else
+        echo -e "\n${RED}${BOLD}✗ Failed to save configuration${NC}" >&2
+        exit 1
+    fi
+}
+
+#=============================================================================
+# ARGUMENT PROCESSING
+#=============================================================================
+
+process_arguments() {
+    # No arguments = interactive mode
+    if [ $# -eq 0 ]; then
+        return 1  # Signal to run interactive mode
+    fi
+
+    # Check if configuration file directory exists
+    if [ ! -d "$(dirname "$CONFIG_FILE")" ]; then
+        echo -e "${RED}Error: Configuration directory not found${NC}" >&2
+        echo -e "${YELLOW}Please run install-complete.sh first${NC}" >&2
+        exit 1
+    fi
+
+    # Process arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --help|-h)
+                print_usage
+                exit 0
+                ;;
+            --list|-l)
+                cmd_list
+                exit 0
+                ;;
+            --get)
+                shift
+                cmd_get "$1"
+                exit 0
+                ;;
+            --enable)
+                shift
+                local hooks=()
+                while [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; do
+                    hooks+=("$1")
+                    shift
+                done
+                cmd_enable "${hooks[@]}"
+                continue  # Continue processing other args
+                ;;
+            --disable)
+                shift
+                local hooks=()
+                while [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; do
+                    hooks+=("$1")
+                    shift
+                done
+                cmd_disable "${hooks[@]}"
+                continue
+                ;;
+            --set)
+                shift
+                local assignments=()
+                while [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; do
+                    assignments+=("$1")
+                    shift
+                done
+                cmd_set "${assignments[@]}"
+                continue
+                ;;
+            --reset)
+                cmd_reset
+                exit 0
+                ;;
+            --apply)
+                cmd_save
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}Error: Unknown option '$1'${NC}" >&2
+                echo "Run '$0 --help' for usage information" >&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
+
+    # If we got here, all programmatic commands executed
+    exit 0
+}
+
+#=============================================================================
+# MAIN ENTRY POINT
+#=============================================================================
+
+# Check if configuration file directory exists (for interactive mode)
 if [ ! -d "$(dirname "$CONFIG_FILE")" ]; then
     echo -e "${RED}Error: Configuration directory not found${NC}"
-    echo -e "${YELLOW}Please run install.sh first${NC}"
+    echo -e "${YELLOW}Please run install-complete.sh first${NC}"
     exit 1
 fi
 
-# Run main
-main
+# Process arguments first
+if ! process_arguments "$@"; then
+    # No arguments or process_arguments returned 1 = run interactive mode
+    main
+fi
