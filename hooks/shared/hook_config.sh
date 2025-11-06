@@ -230,19 +230,31 @@ play_audio_internal() {
     # Windows environments (WSL, Git Bash, MSYS, MINGW, Cygwin, or PowerShell)
     # Check for WSL first (has /proc/version with "microsoft")
     if grep -qi microsoft /proc/version 2>/dev/null; then
-        # WSL environment - use wslpath for path conversion
-        local win_path=$(wslpath -w "$audio_file" 2>/dev/null)
-        if [ -n "$win_path" ]; then
-            # Use PowerShell with proper escaping for WSL
-            powershell.exe -Command "
-                Add-Type -AssemblyName presentationCore
-                \$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
-                \$mediaPlayer.Open('$win_path')
-                \$mediaPlayer.Play()
-                Start-Sleep -Seconds 3
-                \$mediaPlayer.Stop()
-                \$mediaPlayer.Close()
-            " 2>/dev/null &
+        # WSL environment - Windows MediaPlayer cannot access WSL UNC paths
+        # Solution: Copy audio to Windows temp directory first
+        local win_temp_dir="C:/Windows/Temp"
+        local temp_filename="claude_audio_$(date +%s)_$$.mp3"
+        local win_temp_file="$win_temp_dir/$temp_filename"
+        local win_temp_unix=$(wslpath "$win_temp_file" 2>/dev/null)
+
+        if [ -n "$win_temp_unix" ]; then
+            # Copy audio file to Windows temp directory
+            cp "$audio_file" "$win_temp_unix" 2>/dev/null
+
+            # Play audio from Windows temp directory and clean up in background
+            (
+                powershell.exe -Command "
+                    Add-Type -AssemblyName presentationCore
+                    \$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
+                    \$mediaPlayer.Open('$win_temp_file')
+                    \$mediaPlayer.Play()
+                    Start-Sleep -Seconds 4
+                    \$mediaPlayer.Stop()
+                    \$mediaPlayer.Close()
+                " 2>/dev/null
+                # Clean up temp file after playback
+                rm -f "$win_temp_unix" 2>/dev/null
+            ) &
             return 0
         fi
     # Git Bash / MSYS / MINGW (Windows Git Bash)
