@@ -53,7 +53,7 @@ print_header() {
 }
 
 print_step() {
-    ((STEPS_COMPLETED++))
+    ((STEPS_COMPLETED+=1))
     log "\n${MAGENTA}[$STEPS_COMPLETED/$STEPS_TOTAL]${RESET} ${BOLD}$1${RESET}"
 }
 
@@ -63,12 +63,12 @@ print_success() {
 
 print_warning() {
     log "${YELLOW}⚠${RESET} $1"
-    ((WARNINGS++))
+    ((WARNINGS+=1))
 }
 
 print_error() {
     log "${RED}✗${RESET} $1"
-    ((ERRORS++))
+    ((ERRORS+=1))
 }
 
 print_info() {
@@ -161,7 +161,7 @@ step_check_prerequisites() {
     else
         print_error "Claude Code not found"
         print_info "  Install from: https://docs.anthropic.com/claude/docs/claude-code"
-        ((missing++))
+        ((missing+=1))
     fi
 
     # Check Git
@@ -172,7 +172,7 @@ step_check_prerequisites() {
         print_error "Git not found"
         print_info "  Linux/WSL: sudo apt-get install git"
         print_info "  Windows: https://gitforwindows.org/"
-        ((missing++))
+        ((missing+=1))
     fi
 
     # Check Python (optional)
@@ -253,7 +253,7 @@ step_validate_project() {
     # Check required directories
     if [ -d "$PROJECT_DIR/hooks" ]; then
         print_success "hooks/ directory found"
-        ((valid++))
+        ((valid+=1))
     else
         print_error "hooks/ directory not found"
     fi
@@ -261,21 +261,21 @@ step_validate_project() {
     if [ -d "$PROJECT_DIR/audio/default" ]; then
         local audio_count=$(ls -1 "$PROJECT_DIR/audio/default"/*.mp3 2>/dev/null | wc -l)
         print_success "audio/ directory found with $audio_count MP3 files"
-        ((valid++))
+        ((valid+=1))
     else
         print_error "audio/ directory not found"
     fi
 
     if [ -d "$PROJECT_DIR/config" ]; then
         print_success "config/ directory found"
-        ((valid++))
+        ((valid+=1))
     else
         print_error "config/ directory not found"
     fi
 
     if [ -f "$PROJECT_DIR/hooks/shared/hook_config.sh" ]; then
         print_success "hook_config.sh found"
-        ((valid++))
+        ((valid+=1))
     else
         print_error "hook_config.sh not found"
     fi
@@ -333,7 +333,7 @@ step_install_hooks() {
         if [ -f "$PROJECT_DIR/hooks/$hook" ]; then
             cp "$PROJECT_DIR/hooks/$hook" ~/.claude/hooks/
             chmod +x ~/.claude/hooks/$hook
-            ((installed++))
+            ((installed+=1))
             log_silent "  Installed: $hook"
         else
             print_warning "Hook not found: $hook"
@@ -415,7 +415,7 @@ EOF
     else
         print_error "Failed to configure settings"
         print_info "You may need to configure manually"
-        ((ERRORS++))
+        ((ERRORS+=1))
     fi
 }
 
@@ -490,7 +490,7 @@ EOF
     else
         print_error "Failed to configure permissions"
         print_info "You may need to configure manually"
-        ((ERRORS++))
+        ((ERRORS+=1))
     fi
 }
 
@@ -520,7 +520,9 @@ try:
     with open('config/user_preferences.json', 'r') as f:
         config = json.load(f)
 
-    enabled_count = sum(config.get('enabled_hooks', {}).values())
+    # Filter out comment keys and sum only boolean values
+    enabled_hooks = config.get('enabled_hooks', {})
+    enabled_count = sum(1 for k, v in enabled_hooks.items() if not k.startswith('_') and v is True)
     print(f"Configuration valid: {enabled_count} hooks enabled by default")
     sys.exit(0)
 
@@ -550,14 +552,14 @@ step_run_tests() {
         local hook_count=$(ls -1 ~/.claude/hooks/*_hook.sh 2>/dev/null | wc -l)
         if [ $hook_count -ge 9 ]; then
             print_success "Hooks directory: $hook_count scripts installed"
-            ((tests_passed++))
+            ((tests_passed+=1))
         else
             print_error "Hooks directory: Only $hook_count/9 scripts found"
-            ((tests_failed++))
+            ((tests_failed+=1))
         fi
     else
         print_error "Hooks directory not found"
-        ((tests_failed++))
+        ((tests_failed+=1))
     fi
 
     # Test 2: Check settings
@@ -565,14 +567,14 @@ step_run_tests() {
     if [ -f ~/.claude/settings.json ]; then
         if grep -q "notification_hook.sh" ~/.claude/settings.json 2>/dev/null; then
             print_success "Settings: Hooks configured"
-            ((tests_passed++))
+            ((tests_passed+=1))
         else
             print_warning "Settings: Hooks may not be configured"
-            ((tests_failed++))
+            ((tests_failed+=1))
         fi
     else
         print_warning "Settings file not found"
-        ((tests_failed++))
+        ((tests_failed+=1))
     fi
 
     # Test 3: Check permissions
@@ -580,14 +582,14 @@ step_run_tests() {
     if [ -f ~/.claude/settings.local.json ]; then
         if grep -q "allowedTools" ~/.claude/settings.local.json 2>/dev/null; then
             print_success "Permissions: allowedTools configured"
-            ((tests_passed++))
+            ((tests_passed+=1))
         else
             print_warning "Permissions: allowedTools not found"
-            ((tests_failed++))
+            ((tests_failed+=1))
         fi
     else
         print_warning "settings.local.json not found"
-        ((tests_failed++))
+        ((tests_failed+=1))
     fi
 
     # Test 4: Check audio files
@@ -598,18 +600,18 @@ step_run_tests() {
             local audio_count=$(ls -1 "$PROJECT_PATH/audio/default"/*.mp3 2>/dev/null | wc -l)
             if [ $audio_count -ge 9 ]; then
                 print_success "Audio files: $audio_count files found"
-                ((tests_passed++))
+                ((tests_passed+=1))
             else
                 print_warning "Audio files: Only $audio_count/9 files found"
-                ((tests_failed++))
+                ((tests_failed+=1))
             fi
         else
             print_error "Audio directory not found"
-            ((tests_failed++))
+            ((tests_failed+=1))
         fi
     else
         print_error "Project path not recorded"
-        ((tests_failed++))
+        ((tests_failed+=1))
     fi
 
     # Test 5: Test path utilities (if available)
@@ -617,10 +619,10 @@ step_run_tests() {
         print_info "Test 5: Testing path utilities..."
         if bash "$PROJECT_DIR/scripts/.internal-tests/test-path-utils.sh" >> "$LOG_FILE" 2>&1; then
             print_success "Path utilities: All tests passed"
-            ((tests_passed++))
+            ((tests_passed+=1))
         else
             print_warning "Path utilities: Some tests failed (see log)"
-            ((tests_failed++))
+            ((tests_failed+=1))
         fi
     fi
 
