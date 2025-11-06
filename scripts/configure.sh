@@ -118,11 +118,13 @@ load_configuration() {
 }
 
 save_configuration() {
-    python3 << 'PYTHON_SCRIPT'
+    local config_file="$1"
+    python3 << PYTHON_SCRIPT
 import json
 import sys
+import os
 
-config_file = sys.argv[1]
+config_file = "$config_file"
 
 # Load existing config or create new
 try:
