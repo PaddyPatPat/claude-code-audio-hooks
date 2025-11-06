@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v3.0.1 Now Available!** Streamlined installation with integrated environment detection and validation! Dual audio system included: Choose between voice notifications or modern UI chimes!
+> **🎉 v3.1.0 Now Available!** Ultra-clean project structure with single-command installation! All unnecessary files removed - just clone and install!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -170,7 +170,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 3.0.0 from
+Please install Claude Code Audio Hooks version 3.1.0 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -795,7 +795,7 @@ bash scripts/install-complete.sh
 
 ### **What's New in v3.0**
 
-- ✅ Streamlined directory structure (`scripts/internal/`, `scripts/tests/`)
+- ✅ Streamlined directory structure (`scripts/internal/` for auto-run utilities)
 - ✅ Integrated environment detection (no separate scripts needed)
 - ✅ Automated validation (no manual verification needed)
 - ✅ One-command installation handles everything
@@ -1227,16 +1227,8 @@ claude-code-audio-hooks/
 │   ├── configure.sh                # Interactive configuration tool
 │   ├── uninstall.sh                # Complete removal
 │   ├── test-audio.sh               # Audio testing tool
-│   ├── internal/                   # Internal tools (auto-run by installer)
-│   │   ├── detect-environment.sh   # Environment detection
-│   │   └── apply-windows-fix.sh    # Platform-specific fixes
-│   └── tests/                      # Testing tools (auto-run by installer)
-│       ├── check-setup.sh          # 12-point verification
-│       ├── test-path-utils.sh      # Path utilities test suite
-│       └── test-path-conversion.sh # Path conversion tests
-├── examples/
-│   ├── settings.json               # Example Claude Code config
-│   └── user_preferences.json       # Example user config
+│   └── internal/                   # Internal tools (auto-run by installer)
+│       └── detect-environment.sh   # Environment detection
 ├── README.md                       # This file
 ├── CHANGELOG.md                    # Version history
 └── LICENSE                         # MIT License
@@ -1251,8 +1243,8 @@ We welcome contributions! Here's how you can help:
 ### **Bug Reports**
 Found something not working? [Open an issue](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) with:
 - Your operating system
-- Error messages
-- Output of `bash scripts/check-setup.sh`
+- Error messages from the installer
+- Contents of the installation log file (if available)
 - Steps to reproduce
 
 ### **Feature Suggestions**

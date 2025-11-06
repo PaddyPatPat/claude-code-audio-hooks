@@ -609,9 +609,9 @@ step_run_tests() {
     fi
 
     # Test 5: Test path utilities (if available)
-    if [ -f "$PROJECT_DIR/scripts/tests/test-path-utils.sh" ]; then
+    if [ -f "$PROJECT_DIR/scripts/.internal-tests/test-path-utils.sh" ]; then
         print_info "Test 5: Testing path utilities..."
-        if bash "$PROJECT_DIR/scripts/tests/test-path-utils.sh" >> "$LOG_FILE" 2>&1; then
+        if bash "$PROJECT_DIR/scripts/.internal-tests/test-path-utils.sh" >> "$LOG_FILE" 2>&1; then
             print_success "Path utilities: All tests passed"
             ((tests_passed++))
         else
@@ -625,7 +625,7 @@ step_run_tests() {
 
     if [ $tests_failed -gt 2 ]; then
         print_warning "Multiple tests failed. Installation may be incomplete."
-        print_info "Run: bash scripts/tests/check-setup.sh for detailed diagnostics"
+        print_info "Please re-run the installer or check the log file for details."
     fi
 }
 

@@ -5,6 +5,43 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-11-06
+
+### 🎯 Project Cleanup: Achieving True Single-Installation Simplicity
+
+This release further streamlines the project structure by removing unnecessary files and hiding internal utilities from users. The goal: users clone and run ONE installation command, with ZERO confusion.
+
+### Removed
+- **Deleted `/examples/` directory** - Redundant with `/config/` directory
+  - Removed outdated v1.0 example files
+  - Eliminated duplicate configuration examples
+  - Configuration examples now only in `/config/`
+- **Deleted `/docs/` directory** - Empty directory, all docs consolidated in README.md
+- **Deleted obsolete patch script** - `scripts/internal/apply-windows-fix.sh`
+  - v2.x legacy patch script no longer needed
+  - All fixes now integrated into `install-complete.sh`
+- **Removed personal development files** - Added `.claude/` to `.gitignore`
+
+### Changed
+- **Hidden internal test scripts** - Renamed `/scripts/tests/` → `/scripts/.internal-tests/`
+  - Test scripts are auto-run by installer, users shouldn't see them
+  - Reduces decision paralysis and confusion
+  - Updated all internal references to new path
+- **Simplified documentation references**
+  - Removed suggestions to manually run internal scripts
+  - Updated bug report template to request log files instead
+  - Simplified project structure diagram
+- **Cleaner visible file structure**
+  - From 7 top-level directories → 5 directories
+  - From 21+ visible files → ~15 essential files
+  - Only user-facing scripts visible in `/scripts/`
+
+### Impact
+- ✅ **Zero decision anxiety** - One clear installation path
+- ✅ **Reduced confusion** - No unnecessary files or scripts visible
+- ✅ **Cleaner project** - ~4,100 lines of redundant code removed
+- ✅ **Better UX** - Users focus on: Clone → Install → Use
+
 ## [3.0.1] - 2025-11-06
 
 ### Fixed
