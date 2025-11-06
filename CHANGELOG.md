@@ -5,6 +5,39 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2025-11-06
+
+### 🐛 Critical Bug Fixes: Installation Script Stability
+
+Fixed critical issues preventing successful installation on WSL and other platforms.
+
+### Fixed
+- **Bash arithmetic expression error with `set -e`**:
+  - Replaced post-increment operators (`++`) with compound assignment (`+=1`)
+  - Post-increment returns 0 when variable is 0, causing `set -e` to exit
+  - Affected counters: `STEPS_COMPLETED`, `WARNINGS`, `ERRORS`, and all test counters
+  - Installation now completes successfully on all platforms
+
+- **Python type error in configuration validation**:
+  - Fixed `TypeError: unsupported operand type(s) for +: 'int' and 'str'`
+  - Configuration validation now filters out comment keys (starting with `_`)
+  - Properly handles JSON files with inline comments
+
+### Impact
+- ✅ **Installation now works reliably on WSL**
+- ✅ **All arithmetic operations safe with `set -e`**
+- ✅ **Configuration validation handles commented JSON**
+- ✅ **No breaking changes** - fully backward compatible
+
+### Technical Details
+```bash
+# Before (fails with set -e when var=0)
+((STEPS_COMPLETED++))
+
+# After (works correctly)
+((STEPS_COMPLETED+=1))
+```
+
 ## [3.3.0] - 2025-11-06
 
 ### 🤖 Full Automation Support: Non-Interactive Mode for All Scripts
