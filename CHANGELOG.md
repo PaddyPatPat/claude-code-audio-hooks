@@ -5,6 +5,44 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-11-06
+
+### 🧹 Deep Cleanup: Removing All Redundant Scripts
+
+Further simplification by removing truly unnecessary internal scripts and fixing broken references. Now only essential, actively-used files remain.
+
+### Removed
+- **`scripts/internal/detect-environment.sh`** (25KB) - Completely redundant
+  - Environment detection already integrated in `hooks/shared/path_utils.sh`
+  - Never actually called - only mentioned in log messages
+  - Removed entire `/scripts/internal/` directory (now empty)
+- **`scripts/.internal-tests/check-setup.sh`** (8.3KB) - Unused diagnostic script
+  - Not called by install-complete.sh
+  - Had broken path references in test-audio.sh
+- **`scripts/.internal-tests/test-path-conversion.sh`** (5.7KB) - Never invoked
+  - No script in the entire project calls it
+  - Pure legacy code
+
+### Fixed
+- **Broken references in `test-audio.sh`**:
+  - Removed reference to non-existent `./scripts/check-setup.sh`
+  - Removed reference to non-existent `docs/AUDIO_CREATION.md`
+  - Updated to point users to installer and README.md
+- **Misleading suggestions in `install-complete.sh`**:
+  - Removed suggestions to manually run `detect-environment.sh`
+  - Replaced with advice to re-run installer
+
+### Changed
+- **`scripts/.internal-tests/` now contains only 1 file**:
+  - `test-path-utils.sh` (8.7KB) - The ONLY test script actually used by installer
+  - Everything else eliminated
+
+### Impact
+- ✅ **~39KB of truly redundant code removed** (detect-environment.sh + unused tests)
+- ✅ **Zero broken references** - All documentation now accurate
+- ✅ **Ultra-minimal structure** - Only files that are actually used
+- ✅ **No duplicate functionality** - Environment detection in one place only
+
 ## [3.1.0] - 2025-11-06
 
 ### 🎯 Project Cleanup: Achieving True Single-Installation Simplicity

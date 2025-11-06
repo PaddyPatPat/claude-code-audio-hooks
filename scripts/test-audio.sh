@@ -343,8 +343,8 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
 
     echo -e "${BOLD}4. Hook Configuration${NC}"
-    echo "   • Run: ./scripts/check-setup.sh"
-    echo "   • Verify all components are installed correctly"
+    echo "   • Re-run the installer to verify: ./scripts/install-complete.sh"
+    echo "   • Check the installation log for details"
     echo ""
 
     echo -e "${BOLD}5. Manual Test${NC}"
@@ -356,7 +356,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     fi
     echo ""
 
-    echo "For more help, see: docs/AUDIO_CREATION.md and README.md"
+    echo "For more help, see README.md"
 else
     echo ""
     echo -e "${GREEN}${BOLD}🎉 Great! Audio playback is working correctly!${NC}"
@@ -368,6 +368,5 @@ fi
 echo ""
 echo -e "${CYAN}${BOLD}📚 Additional Options:${NC}"
 echo "  • Run ${BOLD}./scripts/configure.sh${NC} to enable/disable hooks"
-echo "  • See ${BOLD}docs/AUDIO_CREATION.md${NC} to create custom audio"
-echo "  • Run ${BOLD}./scripts/check-setup.sh${NC} for full system check"
+echo "  • See ${BOLD}README.md${NC} for configuration and customization"
 echo ""

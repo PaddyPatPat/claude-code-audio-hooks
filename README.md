@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v3.1.0 Now Available!** Ultra-clean project structure with single-command installation! All unnecessary files removed - just clone and install!
+> **🎉 v3.1.1 Now Available!** Ultra-minimal project structure! Zero redundant scripts - only essential files remain. True single-command installation!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -170,7 +170,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 3.1.0 from
+Please install Claude Code Audio Hooks version 3.1.1 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -1223,12 +1223,10 @@ claude-code-audio-hooks/
 │   ├── example_preferences_chimes.json  # All-chimes config example
 │   └── example_preferences_mixed.json   # Mixed audio config example
 ├── scripts/
-│   ├── install-complete.sh         # Complete automated installer (v3.0)
+│   ├── install-complete.sh         # Complete automated installer (v3.1+)
 │   ├── configure.sh                # Interactive configuration tool
 │   ├── uninstall.sh                # Complete removal
-│   ├── test-audio.sh               # Audio testing tool
-│   └── internal/                   # Internal tools (auto-run by installer)
-│       └── detect-environment.sh   # Environment detection
+│   └── test-audio.sh               # Audio testing tool
 ├── README.md                       # This file
 ├── CHANGELOG.md                    # Version history
 └── LICENSE                         # MIT License
