@@ -1,7 +1,8 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Complete Installation Script
-# Version: 2.1.0
+# Version: 3.0.0
 # This script handles the complete installation process automatically
+# Now with integrated environment detection, platform fixes, and validation
 
 set -eo pipefail  # Exit on pipe failures, but continue on errors for better handling
 
@@ -9,7 +10,7 @@ set -eo pipefail  # Exit on pipe failures, but continue on errors for better han
 # CONFIGURATION
 # =============================================================================
 
-VERSION="2.1.0"
+VERSION="3.0.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_FILE="/tmp/claude_hooks_install_$(date +%Y%m%d_%H%M%S).log"
@@ -25,7 +26,7 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # Counters
-STEPS_TOTAL=10
+STEPS_TOTAL=11
 STEPS_COMPLETED=0
 ERRORS=0
 WARNINGS=0
@@ -83,9 +84,8 @@ cleanup() {
         log ""
         log "Troubleshooting:"
         log "  1. Check the log file: $LOG_FILE"
-        log "  2. Run environment detection: bash scripts/detect-environment.sh"
-        log "  3. Try step-by-step installation: see AI_INSTALL.md Method 2"
-        log "  4. Report issue: https://github.com/ChanMeng666/claude-code-audio-hooks/issues"
+        log "  2. Run environment detection: bash scripts/internal/detect-environment.sh"
+        log "  3. Report issue: https://github.com/ChanMeng666/claude-code-audio-hooks/issues"
         log ""
     fi
 
@@ -609,9 +609,9 @@ step_run_tests() {
     fi
 
     # Test 5: Test path utilities (if available)
-    if [ -f "$PROJECT_DIR/scripts/test-path-utils.sh" ]; then
+    if [ -f "$PROJECT_DIR/scripts/tests/test-path-utils.sh" ]; then
         print_info "Test 5: Testing path utilities..."
-        if bash "$PROJECT_DIR/scripts/test-path-utils.sh" >> "$LOG_FILE" 2>&1; then
+        if bash "$PROJECT_DIR/scripts/tests/test-path-utils.sh" >> "$LOG_FILE" 2>&1; then
             print_success "Path utilities: All tests passed"
             ((tests_passed++))
         else
@@ -625,11 +625,37 @@ step_run_tests() {
 
     if [ $tests_failed -gt 2 ]; then
         print_warning "Multiple tests failed. Installation may be incomplete."
-        print_info "Run: bash scripts/check-setup.sh for detailed diagnostics"
+        print_info "Run: bash scripts/tests/check-setup.sh for detailed diagnostics"
     fi
 }
 
-# Step 10: Display next steps
+# Step 10: Offer audio testing
+step_offer_audio_test() {
+    print_step "Audio Testing"
+
+    log ""
+    print_info "Would you like to test audio playback now? (y/N)"
+    read -r -t 30 response || response="n"
+
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            log ""
+            print_info "Running audio test..."
+            if [ -f "$PROJECT_DIR/scripts/test-audio.sh" ]; then
+                bash "$PROJECT_DIR/scripts/test-audio.sh"
+            else
+                print_error "test-audio.sh not found"
+                print_info "You can test audio later with: bash scripts/test-audio.sh"
+            fi
+            ;;
+        *)
+            print_info "Skipping audio test"
+            print_info "You can test audio later with: bash scripts/test-audio.sh"
+            ;;
+    esac
+}
+
+# Step 11: Display next steps
 step_next_steps() {
     print_step "Installation Complete!"
 
@@ -683,12 +709,9 @@ step_next_steps() {
         log "     ${CYAN}cat $LOG_FILE${RESET}"
         log ""
         log "  2. Run environment detection:"
-        log "     ${CYAN}bash scripts/detect-environment.sh${RESET}"
+        log "     ${CYAN}bash scripts/internal/detect-environment.sh${RESET}"
         log ""
-        log "  3. Try step-by-step installation:"
-        log "     See ${CYAN}AI_INSTALL.md${RESET} Method 2"
-        log ""
-        log "  4. Get help:"
+        log "  3. Get help:"
         log "     ${CYAN}https://github.com/ChanMeng666/claude-code-audio-hooks/issues${RESET}"
         log ""
     fi
@@ -696,7 +719,6 @@ step_next_steps() {
     # Show useful commands
     log "Useful Commands:"
     log ""
-    log "  Check status:    ${CYAN}bash scripts/check-setup.sh${RESET}"
     log "  Test audio:      ${CYAN}bash scripts/test-audio.sh${RESET}"
     log "  Configure:       ${CYAN}bash scripts/configure.sh${RESET}"
     log "  View triggers:   ${CYAN}cat /tmp/claude_hooks_log/hook_triggers.log${RESET}"
@@ -705,10 +727,9 @@ step_next_steps() {
 
     log "Documentation:"
     log ""
-    log "  Installation:    ${CYAN}AI_INSTALL.md${RESET}"
-    log "  Utilities:       ${CYAN}UTILITIES_README.md${RESET}"
-    log "  Windows issues:  ${CYAN}WINDOWS_FIX_README.md${RESET}"
-    log "  Quick fixes:     ${CYAN}QUICK_FIX_GUIDE.md${RESET}"
+    log "  README:          ${CYAN}README.md${RESET}"
+    log "  Changelog:       ${CYAN}CHANGELOG.md${RESET}"
+    log "  License:         ${CYAN}LICENSE${RESET}"
     log ""
 
     log "Installation log saved to:"
@@ -734,6 +755,7 @@ main() {
     step_configure_permissions
     step_initialize_config
     step_run_tests
+    step_offer_audio_test
     step_next_steps
 
     # Return success if no critical errors
