@@ -53,8 +53,47 @@ get_project_dir() {
 PROJECT_DIR="$(get_project_dir)"
 AUDIO_DIR="$PROJECT_DIR/audio"
 CONFIG_FILE="$PROJECT_DIR/config/user_preferences.json"
-LOCK_FILE="/tmp/claude_audio_hooks.lock"
-QUEUE_DIR="/tmp/claude_audio_hooks_queue"
+
+# Cross-platform temp directory
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    # Windows (Git Bash, MSYS2, Cygwin) - use Windows TEMP
+    QUEUE_DIR="${TEMP:-${TMP:-/tmp}}/claude_audio_hooks_queue"
+else
+    # Unix (Linux, macOS, WSL)
+    QUEUE_DIR="/tmp/claude_audio_hooks_queue"
+fi
+LOCK_FILE="$QUEUE_DIR/audio.lock"
+
+# Debug mode (set CLAUDE_HOOKS_DEBUG=1 to enable)
+CLAUDE_HOOKS_DEBUG="${CLAUDE_HOOKS_DEBUG:-}"
+
+# Debug logging function
+log_debug() {
+    if [[ "$CLAUDE_HOOKS_DEBUG" == "1" ]] || [[ "$CLAUDE_HOOKS_DEBUG" == "true" ]]; then
+        local log_dir="$QUEUE_DIR/logs"
+        mkdir -p "$log_dir" 2>/dev/null
+        local log_file="$log_dir/debug.log"
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        echo "$timestamp | DEBUG | $1" >> "$log_file"
+        # Keep only last 500 lines
+        if [ -f "$log_file" ]; then
+            tail -500 "$log_file" > "$log_file.tmp" 2>/dev/null && mv "$log_file.tmp" "$log_file" 2>/dev/null || true
+        fi
+    fi
+}
+
+# Error logging function (always logged)
+log_error() {
+    local log_dir="$QUEUE_DIR/logs"
+    mkdir -p "$log_dir" 2>/dev/null
+    local log_file="$log_dir/errors.log"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "$timestamp | ERROR | $1" >> "$log_file"
+    # Keep only last 200 lines
+    if [ -f "$log_file" ]; then
+        tail -200 "$log_file" > "$log_file.tmp" 2>/dev/null && mv "$log_file.tmp" "$log_file" 2>/dev/null || true
+    fi
+}
 
 # =============================================================================
 # PYTHON COMMAND DETECTION (Windows Compatibility)
@@ -165,7 +204,7 @@ is_hook_enabled() {
 import json
 import sys
 try:
-    with open("$config_file_for_python", "r") as f:
+    with open("$config_file_for_python", "r", encoding="utf-8") as f:
         config = json.load(f)
     enabled = config.get("enabled_hooks", {}).get("$hook_type", False)
     print("true" if enabled else "false")
@@ -197,7 +236,7 @@ get_audio_file() {
         local audio_path=$("$python_cmd" <<EOF 2>/dev/null
 import json
 try:
-    with open("$config_file_for_python", "r") as f:
+    with open("$config_file_for_python", "r", encoding="utf-8") as f:
         config = json.load(f)
     audio_file = config.get("audio_files", {}).get("$hook_type", "$default_file")
     print(audio_file)
@@ -259,26 +298,36 @@ play_audio_internal() {
         fi
     # Git Bash / MSYS / MINGW (Windows Git Bash)
     elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]]; then
-        # Convert Unix-style path to Windows path (e.g., /c/Users/... -> C:/Users/...)
-        local win_path=$(echo "$audio_file" | sed 's|^/\([a-zA-Z]\)/|\U\1:/|')
+        # Convert Unix-style path to Windows path using cygpath (most reliable)
+        local win_path
+        if command -v cygpath &> /dev/null; then
+            win_path=$(cygpath -w "$audio_file" 2>/dev/null)
+        else
+            # Fallback: manual conversion for /c/Users/... style paths
+            win_path=$(echo "$audio_file" | sed 's|^/\([a-zA-Z]\)/|\U\1:/|')
+        fi
+
         if [ -n "$win_path" ]; then
             # Create temporary PowerShell script to avoid escaping issues
             local temp_ps1="/tmp/claude_audio_play_$$.ps1"
-            local temp_ps1_win=$(echo "$temp_ps1" | sed 's|^/\([a-zA-Z]\)/|\U\1:/|')
+            local temp_ps1_win
+            if command -v cygpath &> /dev/null; then
+                temp_ps1_win=$(cygpath -w "$temp_ps1" 2>/dev/null)
+            else
+                # Fallback for /tmp -> use TEMP environment variable
+                temp_ps1_win="$TEMP/claude_audio_play_$$.ps1"
+            fi
 
-            # Create PowerShell script
-            cat > "$temp_ps1" << 'PSEOF'
+            # Create PowerShell script - use direct path instead of file:// URI
+            cat > "$temp_ps1" << PSEOF
 Add-Type -AssemblyName presentationCore
-$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
-$uri = New-Object System.Uri("file:///__AUDIOFILE__")
-$mediaPlayer.Open($uri)
-$mediaPlayer.Play()
+\$mediaPlayer = New-Object System.Windows.Media.MediaPlayer
+\$mediaPlayer.Open("$win_path")
+\$mediaPlayer.Play()
 Start-Sleep -Seconds 3
-$mediaPlayer.Stop()
-$mediaPlayer.Close()
+\$mediaPlayer.Stop()
+\$mediaPlayer.Close()
 PSEOF
-            # Replace placeholder with actual path
-            sed -i "s|__AUDIOFILE__|$win_path|g" "$temp_ps1" 2>/dev/null
 
             # Execute PowerShell script and clean up in background
             (powershell.exe -ExecutionPolicy Bypass -File "$temp_ps1_win" 2>/dev/null; rm -f "$temp_ps1" 2>/dev/null) &
@@ -367,7 +416,7 @@ is_queue_enabled() {
     local queue_enabled=$("$python_cmd" <<EOF 2>/dev/null
 import json
 try:
-    with open("$config_file_for_python", "r") as f:
+    with open("$config_file_for_python", "r", encoding="utf-8") as f:
         config = json.load(f)
     enabled = config.get("playback_settings", {}).get("queue_enabled", True)
     print("true" if enabled else "false")
@@ -399,7 +448,7 @@ get_debounce_ms() {
     "$python_cmd" <<EOF 2>/dev/null
 import json
 try:
-    with open("$config_file_for_python", "r") as f:
+    with open("$config_file_for_python", "r", encoding="utf-8") as f:
         config = json.load(f)
     debounce = config.get("playback_settings", {}).get("debounce_ms", 500)
     print(debounce)

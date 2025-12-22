@@ -11,10 +11,19 @@ set -eo pipefail  # Exit on pipe failures, but continue on errors for better han
 # CONFIGURATION
 # =============================================================================
 
-VERSION="3.2.0"
+VERSION="3.3.4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-LOG_FILE="/tmp/claude_hooks_install_$(date +%Y%m%d_%H%M%S).log"
+
+# Cross-platform temp directory
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    # Windows (Git Bash, MSYS2, Cygwin) - use Windows TEMP
+    LOG_DIR="${TEMP:-${TMP:-/tmp}}"
+else
+    # Unix (Linux, macOS, WSL)
+    LOG_DIR="/tmp"
+fi
+LOG_FILE="$LOG_DIR/claude_hooks_install_$(date +%Y%m%d_%H%M%S).log"
 
 # Non-interactive mode flag (can be set via --yes or --no-prompt)
 NON_INTERACTIVE=false
@@ -107,18 +116,64 @@ command_exists() {
     command -v "$1" &> /dev/null
 }
 
-# Get Python command
+# Get Python command (prefer py on Windows for reliability)
 get_python_cmd() {
-    for cmd in python3 python py; do
+    local candidates
+
+    # On Windows, prefer 'py' launcher which is more reliable
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+        candidates="py python3 python"
+    else
+        candidates="python3 python py"
+    fi
+
+    for cmd in $candidates; do
         if command_exists "$cmd"; then
             local version=$("$cmd" --version 2>&1)
             if [[ "$version" == *"Python 3"* ]]; then
-                echo "$cmd"
-                return 0
+                # Verify minimum version (3.6+)
+                local major_minor=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+                if [[ -n "$major_minor" ]]; then
+                    local major=$(echo "$major_minor" | cut -d. -f1)
+                    local minor=$(echo "$major_minor" | cut -d. -f2)
+                    if [[ "$major" -ge 3 ]] && [[ "$minor" -ge 6 ]]; then
+                        echo "$cmd"
+                        return 0
+                    fi
+                else
+                    # Can't verify version, but it's Python 3, accept it
+                    echo "$cmd"
+                    return 0
+                fi
             fi
         fi
     done
     return 1
+}
+
+# Check if running on Windows-like environment
+is_windows_env() {
+    [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$OSTYPE" == "cygwin" ]]
+}
+
+# Convert path to Windows format if needed
+to_windows_path() {
+    local path="$1"
+    if is_windows_env; then
+        # Try cygpath first (more reliable)
+        if command_exists cygpath; then
+            cygpath -m "$path" 2>/dev/null || echo "$path"
+        else
+            # Manual conversion: /d/path -> D:/path
+            if [[ "$path" =~ ^/([a-zA-Z])/ ]]; then
+                echo "${BASH_REMATCH[1]^}:${path:2}"
+            else
+                echo "$path"
+            fi
+        fi
+    else
+        echo "$path"
+    fi
 }
 
 # Create backup of file
@@ -303,9 +358,16 @@ step_install_hooks() {
     mkdir -p ~/.claude/hooks/shared
     print_success "Created hooks directories"
 
-    # Record project path
-    echo "$PROJECT_DIR" > ~/.claude/hooks/.project_path
-    print_success "Recorded project path: $PROJECT_DIR"
+    # Record project path (use Windows format on Windows for Python compatibility)
+    local project_path_to_save
+    if is_windows_env; then
+        project_path_to_save=$(to_windows_path "$PROJECT_DIR")
+        print_info "Converting path for Windows: $project_path_to_save"
+    else
+        project_path_to_save="$PROJECT_DIR"
+    fi
+    echo "$project_path_to_save" > ~/.claude/hooks/.project_path
+    print_success "Recorded project path: $project_path_to_save"
 
     # Install shared utilities
     print_info "Installing shared utilities..."
@@ -313,6 +375,12 @@ step_install_hooks() {
     cp "$PROJECT_DIR/hooks/shared/hook_config.sh" ~/.claude/hooks/shared/
     chmod +x ~/.claude/hooks/shared/*.sh
     print_success "Shared utilities installed"
+
+    # Install Python hook runner (for Windows compatibility)
+    if [ -f "$PROJECT_DIR/hooks/hook_runner.py" ]; then
+        cp "$PROJECT_DIR/hooks/hook_runner.py" ~/.claude/hooks/
+        print_success "Python hook runner installed"
+    fi
 
     # Install hook scripts
     print_info "Installing hook scripts..."
@@ -368,52 +436,110 @@ step_configure_settings() {
 import json
 import os
 import sys
+import platform
 
 settings_file = os.path.expanduser('~/.claude/settings.json')
+home_dir = os.path.expanduser('~')
 
 try:
     # Read existing settings or create new
     if os.path.exists(settings_file):
-        with open(settings_file, 'r') as f:
+        with open(settings_file, 'r', encoding='utf-8') as f:
             settings = json.load(f)
     else:
         settings = {}
 
-    # Add hooks using the new format (Claude Code v2.0.32+)
-    # New format: Each hook is an array of matcher objects containing hooks arrays
+    # Add hooks configuration for Claude Code
     if 'hooks' not in settings:
         settings['hooks'] = {}
 
-    hooks = {
-        'Notification': '~/.claude/hooks/notification_hook.sh',
-        'Stop': '~/.claude/hooks/stop_hook.sh',
-        'PreToolUse': '~/.claude/hooks/pretooluse_hook.sh',
-        'PostToolUse': '~/.claude/hooks/posttooluse_hook.sh',
-        'UserPromptSubmit': '~/.claude/hooks/userprompt_hook.sh',
-        'SubagentStop': '~/.claude/hooks/subagent_hook.sh',
-        'PreCompact': '~/.claude/hooks/precompact_hook.sh',
-        'SessionStart': '~/.claude/hooks/session_start_hook.sh',
-        'SessionEnd': '~/.claude/hooks/session_end_hook.sh'
-    }
+    # Determine if we're on Windows
+    is_windows = platform.system() == 'Windows' or os.name == 'nt'
 
-    for hook_name, hook_path in hooks.items():
-        # Convert to new array format with matcher structure
-        settings['hooks'][hook_name] = [
-            {
-                'hooks': [
+    # On Windows, Claude Code executes hooks via CMD/PowerShell
+    # Bash scripts won't work reliably - use Python hook_runner.py instead
+    # On Unix systems, bash scripts work fine
+
+    if is_windows:
+        # Windows: Use Python hook_runner.py for reliable execution
+        hooks_dir = home_dir.replace('\\', '/') + '/.claude/hooks'
+        hook_runner = f'{hooks_dir}/hook_runner.py'
+
+        # Hook type names for Python runner
+        hook_types = {
+            'PreToolUse': 'pretooluse',
+            'PostToolUse': 'posttooluse',
+            'Notification': 'notification',
+            'Stop': 'stop',
+            'UserPromptSubmit': 'userpromptsubmit',
+            'SubagentStop': 'subagent_stop',
+            'PreCompact': 'precompact',
+            'SessionStart': 'session_start',
+            'SessionEnd': 'session_end'
+        }
+
+        hooks_with_matcher = ['PreToolUse', 'PostToolUse']
+
+        for hook_name, hook_type in hook_types.items():
+            # Use 'py' command which is reliable on Windows
+            command = f'py "{hook_runner}" {hook_type}'
+
+            if hook_name in hooks_with_matcher:
+                settings['hooks'][hook_name] = [
                     {
-                        'type': 'command',
-                        'command': hook_path
+                        'matcher': '',
+                        'hooks': [{'type': 'command', 'command': command}]
                     }
                 ]
-            }
-        ]
+            else:
+                settings['hooks'][hook_name] = [
+                    {
+                        'hooks': [{'type': 'command', 'command': command}]
+                    }
+                ]
+
+        env_note = "(Windows - Python hooks)"
+    else:
+        # Unix: Use bash scripts directly
+        hooks_dir = "~/.claude/hooks"
+
+        hooks_with_matcher = {
+            'PreToolUse': f'{hooks_dir}/pretooluse_hook.sh',
+            'PostToolUse': f'{hooks_dir}/posttooluse_hook.sh'
+        }
+
+        hooks_without_matcher = {
+            'Notification': f'{hooks_dir}/notification_hook.sh',
+            'Stop': f'{hooks_dir}/stop_hook.sh',
+            'UserPromptSubmit': f'{hooks_dir}/userprompt_hook.sh',
+            'SubagentStop': f'{hooks_dir}/subagent_hook.sh',
+            'PreCompact': f'{hooks_dir}/precompact_hook.sh',
+            'SessionStart': f'{hooks_dir}/session_start_hook.sh',
+            'SessionEnd': f'{hooks_dir}/session_end_hook.sh'
+        }
+
+        for hook_name, hook_path in hooks_with_matcher.items():
+            settings['hooks'][hook_name] = [
+                {
+                    'matcher': '',
+                    'hooks': [{'type': 'command', 'command': hook_path}]
+                }
+            ]
+
+        for hook_name, hook_path in hooks_without_matcher.items():
+            settings['hooks'][hook_name] = [
+                {
+                    'hooks': [{'type': 'command', 'command': hook_path}]
+                }
+            ]
+
+        env_note = "(Unix - bash hooks)"
 
     # Save settings
-    with open(settings_file, 'w') as f:
-        json.dump(settings, f, indent=2)
+    with open(settings_file, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
 
-    print(f"Configured {len(hooks)} hooks in settings.json (new format)")
+    print(f"Configured 9 hooks in settings.json {env_note}")
     sys.exit(0)
 
 except Exception as e:
@@ -455,7 +581,7 @@ settings_local = os.path.expanduser('~/.claude/settings.local.json')
 try:
     # Read existing or create new
     if os.path.exists(settings_local):
-        with open(settings_local, 'r') as f:
+        with open(settings_local, 'r', encoding='utf-8') as f:
             settings = json.load(f)
     else:
         settings = {}
@@ -485,8 +611,8 @@ try:
             added += 1
 
     # Save settings
-    with open(settings_local, 'w') as f:
-        json.dump(settings, f, indent=2)
+    with open(settings_local, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
 
     print(f"Added {added} hook permissions")
     sys.exit(0)
@@ -528,7 +654,7 @@ import json
 import sys
 
 try:
-    with open('config/user_preferences.json', 'r') as f:
+    with open('config/user_preferences.json', 'r', encoding='utf-8') as f:
         config = json.load(f)
 
     # Filter out comment keys and sum only boolean values

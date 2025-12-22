@@ -1,9 +1,9 @@
 # Claude Code Audio Hooks 🔊
 
-> **🎉 v3.3.3 Now Available!** Fixed critical WSL audio playback & hooks format issues! Full automation support for all scripts!
+> **🎉 v3.3.4 Now Available!** Full Windows native support! New PowerShell installer, enhanced debug logging, and improved cross-platform compatibility!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.3.3-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-3.3.4-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -36,6 +36,18 @@ https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 - [Uninstalling](#-uninstalling)
 - [FAQ](#-faq)
 - [Contributing](#-contributing)
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [**CLAUDE.md**](CLAUDE.md) | AI Assistant Guide - For Claude Code, Cursor, Copilot |
+| [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md) | System architecture with Mermaid diagrams |
+| [**docs/INSTALLATION_GUIDE.md**](docs/INSTALLATION_GUIDE.md) | Detailed installation for all platforms |
+| [**docs/TROUBLESHOOTING.md**](docs/TROUBLESHOOTING.md) | Problem solving and debug guide |
+| [**CHANGELOG.md**](CHANGELOG.md) | Version history and release notes |
 
 ---
 
@@ -141,11 +153,14 @@ graph TB
 
 | Platform | Status | Audio Player | Installation |
 |----------|--------|--------------|--------------|
+| **Windows (Native)** | ✅ **NEW!** Full support | PowerShell | `.\scripts\install-windows.ps1` |
 | **WSL (Ubuntu/Debian)** | ✅ Fully tested | PowerShell | `bash scripts/install-complete.sh` |
 | **Git Bash (Windows)** | ✅ Fully supported<br/>*Auto path conversion* | PowerShell | `bash scripts/install-complete.sh` |
 | **macOS** | ✅ Native support<br/>*Bash 3.2+ compatible* | afplay | `bash scripts/install-complete.sh` |
 | **Native Linux** | ✅ Fully supported | mpg123/aplay | `bash scripts/install-complete.sh` |
 | **Cygwin** | ✅ Fully supported | PowerShell | `bash scripts/install-complete.sh` |
+
+> **NEW in v3.3.4:** Windows users can now install directly using PowerShell - no Git Bash required!
 
 > **Note for Git Bash Users:** Version 2.2+ includes automatic path conversion to handle Git Bash's Unix-style paths. The installer will configure this automatically—no manual setup required!
 
@@ -175,7 +190,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 3.3.0 from
+Please install Claude Code Audio Hooks version 3.3.4 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -212,6 +227,36 @@ claude "What is 2+2?"
 
 **Success Rate:** 98%+
 **Installation Time:** 1-2 minutes
+
+---
+
+### **🪟 Windows Native Installation** (PowerShell)
+
+For Windows users who prefer not to use Git Bash:
+
+```powershell
+# 1. Clone the repository
+git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git
+cd claude-code-audio-hooks
+
+# 2. Run the PowerShell installer
+.\scripts\install-windows.ps1
+
+# 3. Restart Claude Code
+# Close and reopen your terminal
+
+# 4. Test with Claude
+claude "What is 2+2?"
+```
+
+**Requirements:**
+- Python 3.6+ (download from python.org)
+- Claude Code CLI
+
+**Non-interactive mode:**
+```powershell
+.\scripts\install-windows.ps1 -NonInteractive
+```
 
 ---
 
@@ -1026,6 +1071,59 @@ mpg123 ~/claude-code-audio-hooks/audio/default/task-complete.mp3
 afplay ~/claude-code-audio-hooks/audio/default/task-complete.mp3
 ```
 
+#### **Check 7: Use the Diagnostic Tool**
+
+Run the built-in diagnostic tool to identify issues:
+
+```bash
+# Basic diagnostic
+python scripts/diagnose.py
+
+# With detailed information
+python scripts/diagnose.py --verbose
+
+# Include audio playback test
+python scripts/diagnose.py --test-audio
+
+# Full diagnostic
+python scripts/diagnose.py -v --test-audio
+```
+
+The diagnostic tool checks:
+- Python version and platform detection
+- Hooks directory and hook_runner.py installation
+- Project path configuration
+- Audio files availability
+- Claude settings.json configuration
+- Recent hook trigger logs
+
+#### **Check 8: Enable Debug Logging**
+
+For detailed troubleshooting, enable debug mode:
+
+**Windows (PowerShell):**
+```powershell
+$env:CLAUDE_HOOKS_DEBUG = "1"
+claude "test message"
+# Check debug logs
+Get-Content "$env:TEMP\claude_audio_hooks_queue\logs\debug.log"
+```
+
+**Windows (Git Bash) / macOS / Linux:**
+```bash
+export CLAUDE_HOOKS_DEBUG=1
+claude "test message"
+# Check debug logs
+cat /tmp/claude_audio_hooks_queue/logs/debug.log  # Linux/macOS
+cat "$TEMP/claude_audio_hooks_queue/logs/debug.log"  # Git Bash
+```
+
+Debug logs show:
+- Hook trigger events with timestamps
+- Path normalization and conversion
+- Audio file selection and playback attempts
+- Error details with stack traces
+
 ### **Issue: "Permission denied" errors**
 
 ```bash
@@ -1120,22 +1218,38 @@ bash scripts/install-complete.sh
 
 ### **Still Having Issues?**
 
-1. **Check installation log:**
+1. **Run the diagnostic tool:**
+   ```bash
+   python scripts/diagnose.py -v --test-audio
+   ```
+
+2. **Check installation log:**
    ```bash
    # View the most recent installation log
+   # Linux/macOS:
    ls -t /tmp/claude_hooks_install_*.log | head -1 | xargs cat
+   # Windows (PowerShell):
+   Get-Content (Get-ChildItem "$env:TEMP\claude_hooks_install_*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
    ```
 
-2. **Re-run installation:**
+3. **Enable debug mode and check logs:**
+   ```bash
+   export CLAUDE_HOOKS_DEBUG=1  # or $env:CLAUDE_HOOKS_DEBUG = "1" on PowerShell
+   claude "test"
+   # Then check debug.log in the logs directory
+   ```
+
+4. **Re-run installation:**
    ```bash
    cd ~/claude-code-audio-hooks
-   bash scripts/install-complete.sh
-   # The installer performs comprehensive diagnostics automatically
+   bash scripts/install-complete.sh  # Linux/macOS/Git Bash
+   # Or for Windows native:
+   # .\scripts\install-windows.ps1
    ```
 
-3. **Check existing issues:** [GitHub Issues](https://github.com/ChanMeng666/claude-code-audio-hooks/issues)
+5. **Check existing issues:** [GitHub Issues](https://github.com/ChanMeng666/claude-code-audio-hooks/issues)
 
-4. **Create new issue** with:
+6. **Create new issue** with:
    - Operating system and version
    - Installation log content
    - Error messages

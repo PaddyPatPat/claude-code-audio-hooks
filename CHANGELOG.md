@@ -5,6 +5,84 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.4] - 2025-12-22
+
+### 🪟 Full Windows Native Support & Cross-Platform Improvements
+
+This release adds comprehensive Windows native support and improves cross-platform compatibility across all environments.
+
+### Added
+
+#### 1. Windows PowerShell Installer (`scripts/install-windows.ps1`)
+- **New**: Native PowerShell installer for Windows users who don't use Git Bash
+- **Features**:
+  - Prerequisite checking (Python 3.6+, Claude Code CLI)
+  - Automatic settings.json configuration
+  - Installation validation and testing
+  - Non-interactive mode (`-NonInteractive` flag)
+
+#### 2. Diagnostic Tool (`scripts/diagnose.py`)
+- **New**: Cross-platform diagnostic utility for troubleshooting
+- **Checks**:
+  - Python version and platform detection (Windows/WSL/macOS/Linux/Git Bash)
+  - Hooks directory and hook_runner.py installation status
+  - Project path configuration and audio files availability
+  - Claude settings.json hook configuration
+  - Recent hook trigger logs
+- **Options**: `--verbose` for detailed info, `--test-audio` to test playback
+
+#### 3. Debug Logging Mode
+- **New**: Set `CLAUDE_HOOKS_DEBUG=1` environment variable to enable detailed logging
+- **Logs include**: Hook triggers, path normalization, audio playback attempts, errors
+- **Log location**: `$TEMP/claude_audio_hooks_queue/logs/debug.log` (Windows) or `/tmp/claude_audio_hooks_queue/logs/debug.log` (Unix)
+
+### Improved
+
+#### 1. Enhanced `hook_runner.py`
+- **Path Normalization**: Handles Git Bash (`/d/...`), WSL2 (`/mnt/c/...`), and Cygwin (`/cygdrive/c/...`) paths
+- **PowerShell Safety**: Proper escaping of special characters in audio file paths
+- **Temp Directory**: Cross-platform temp directory detection with multiple fallbacks
+- **Error Handling**: Granular exception handling with detailed error logging
+- **Debug Output**: Comprehensive logging when `CLAUDE_HOOKS_DEBUG=1` is set
+
+#### 2. Improved `install-complete.sh`
+- **Temp Directory**: Uses platform-appropriate temp directories (`$TEMP` on Windows, `/tmp` on Unix)
+- **Path Format**: Saves `.project_path` in Windows format on Windows environments
+- **Python Detection**: Prioritizes `py` launcher on Windows, then `python3`, then `python`
+
+#### 3. Updated `hook_config.sh`
+- **Debug Logging**: Added `log_debug()` and `log_error()` functions
+- **Temp Directory**: Cross-platform temp directory handling
+- **Path Functions**: Unified path conversion with `hook_runner.py`
+
+### Cross-Platform Status
+- ✅ **Windows Native**: Full support via PowerShell installer
+- ✅ **Windows + Git Bash**: Automatic path conversion
+- ✅ **Windows + WSL**: PowerShell audio playback via temp file copy
+- ✅ **macOS**: Full support (afplay)
+- ✅ **Linux**: Full support (mpg123/ffplay/aplay)
+- ✅ **Cygwin**: Full support with path conversion
+
+### Upgrade Instructions
+
+**For existing installations:**
+```bash
+cd claude-code-audio-hooks
+git pull origin master
+
+# Re-run installer to update all components
+bash scripts/install-complete.sh  # Linux/macOS/Git Bash
+# Or: .\scripts\install-windows.ps1  # Windows PowerShell
+```
+
+**To enable debug logging:**
+```bash
+export CLAUDE_HOOKS_DEBUG=1  # Linux/macOS/Git Bash
+# Or: $env:CLAUDE_HOOKS_DEBUG = "1"  # Windows PowerShell
+```
+
+---
+
 ## [3.3.3] - 2025-11-07
 
 ### 🐛 Critical Bug Fixes: WSL Audio & Hooks Format
