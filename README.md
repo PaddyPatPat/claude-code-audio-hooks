@@ -1,3 +1,5 @@
+[![Project Banner](./public/claude-code-audio-hooks-logo.svg)](#)
+
 # Claude Code Audio Hooks 🔊
 
 > **🎉 v3.3.4 Now Available!** Full Windows native support! New PowerShell installer, enhanced debug logging, and improved cross-platform compatibility!
